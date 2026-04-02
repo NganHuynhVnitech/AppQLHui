@@ -5,6 +5,8 @@
     var livingShares = ViewBag.LivingShares as List<AppQLHui.Models.TontineShare>;
 }
 
+@Html.AntiForgeryToken()
+
 <h4 class="mb-3">🎯 Màn hình Khui hụi</h4>
 
 <div class="row g-3">
@@ -184,7 +186,10 @@
 
         fetch('/Draw/Preview', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
             body: `tontineId=${tontineId}&winningShareId=${selectedShareId}&bidAmount=${bid}`
         })
         .then(r => r.json())

@@ -49,7 +49,7 @@ namespace AppQLHui.Controllers
         }
 
         /// <summary>AJAX: Tính toán preview trước khi chốt</summary>
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Preview(int tontineId, int winningShareId, decimal bidAmount)
         {
             try
