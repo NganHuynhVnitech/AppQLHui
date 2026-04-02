@@ -8,7 +8,7 @@ obj/
 *.db-shm
 *.db-wal
 publish/
-wwwroot/lib/
+AppQLHui/wwwroot/lib/
 
 ## Node
 node_modules/
