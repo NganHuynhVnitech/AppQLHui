@@ -39,7 +39,7 @@ namespace AppQLHui.Controllers
             tontine.Status = TontineStatus.Draft;
             _db.Tontines.Add(tontine);
             await _db.SaveChangesAsync();
-            TempData["Success"] = $"Da tao day hui \"{tontine.Name}\"!";
+            TempData["Success"] = $"Đã tạo dây hụi \"{tontine.Name}\"!";
             return RedirectToAction("SetupShares", new { id = tontine.Id });
         }
 

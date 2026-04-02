@@ -32,7 +32,7 @@ namespace AppQLHui.Controllers
             player.CreatedAt = DateTime.Now;
             _db.Players.Add(player);
             await _db.SaveChangesAsync();
-            TempData["Success"] = $"Da them hui vien \"{player.Name}\" thanh cong!";
+            TempData["Success"] = $"Đã thêm hụi viên \"{player.Name}\" thành công!";
             return RedirectToAction(nameof(Index));
         }
 
