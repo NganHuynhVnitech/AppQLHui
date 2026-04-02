@@ -1,0 +1,36 @@
+@model AppQLHui.Models.Player
+@{
+    ViewData["Title"] = "Thêm Hụi viên";
+}
+
+<div class="row justify-content-center">
+<div class="col-md-6">
+<div class="card">
+    <div class="card-header fw-bold">➕ Thêm Hụi viên mới</div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-semibold"></label>
+                <input asp-for="Name" class="form-control" placeholder="Nguyễn Văn A" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Phone" class="form-label fw-semibold"></label>
+                <input asp-for="Phone" class="form-control" placeholder="0901234567" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="ZaloName" class="form-label fw-semibold"></label>
+                <input asp-for="ZaloName" class="form-control" placeholder="Tên Zalo" />
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">💾 Lưu</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Huỷ</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

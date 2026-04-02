@@ -1,0 +1,69 @@
+@model IEnumerable<AppQLHui.Models.Transaction>
+@{
+    ViewData["Title"] = "Bill đóng hụi theo ngày";
+    var date = (DateTime)ViewBag.Date;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h4>📅 Bill đóng hụi ngày @date.ToString("dd/MM/yyyy")</h4>
+    <div class="d-flex gap-2">
+        <form method="get" asp-action="DailyBill" class="d-flex gap-2">
+            <input type="date" name="date" value="@date.ToString("yyyy-MM-dd")" class="form-control" />
+            <button type="submit" class="btn btn-primary">Xem</button>
+        </form>
+        <button onclick="window.print()" class="btn btn-outline-secondary">🖨️ In</button>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có giao dịch nào vào ngày @date.ToString("dd/MM/yyyy").</div>
+}
+else
+{
+    @foreach (var grp in Model.GroupBy(t => t.Player.Name).OrderBy(g => g.Key))
+    {
+        <div class="card mb-3">
+            <div class="card-header fw-bold">👤 @grp.Key</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Dây hụi</th><th>Kỳ</th>
+                            <th class="text-end">Đóng</th>
+                            <th class="text-end">Nhận</th>
+                            <th class="text-end">Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tx in grp)
+                        {
+                            var nc = tx.NetTotal >= 0 ? "text-positive" : "text-negative";
+                            <tr>
+                                <td>@tx.Draw.Tontine.Name</td>
+                                <td>#@tx.Draw.SequenceNumber</td>
+                                <td class="text-end">@(tx.AmountPay > 0 ? tx.AmountPay.ToString("N0")+" đ" : "-")</td>
+                                <td class="text-end text-success">@(tx.AmountReceive > 0 ? tx.AmountReceive.ToString("N0")+" đ" : "-")</td>
+                                <td class="text-end @nc fw-bold">@(tx.NetTotal >= 0 ? "+" : "")@tx.NetTotal.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="fw-bold table-secondary">
+                        <tr>
+                            <td colspan="2">Tổng</td>
+                            <td class="text-end">@grp.Sum(t => t.AmountPay).ToString("N0") đ</td>
+                            <td class="text-end">@grp.Sum(t => t.AmountReceive).ToString("N0") đ</td>
+                            <td class="text-end @(grp.Sum(t=>t.NetTotal)>=0?"text-positive":"text-negative")">
+                                @(grp.Sum(t=>t.NetTotal) >= 0 ? "+" : "")@grp.Sum(t => t.NetTotal).ToString("N0") đ
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+<div class="no-print mt-3">
+    <a asp-action="Index" class="btn btn-outline-secondary">← Sổ hụi</a>
+</div>

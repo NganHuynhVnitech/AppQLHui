@@ -1,0 +1,22 @@
+@model AppQLHui.Models.Player
+@{
+    ViewData["Title"] = "Xoá Hụi viên";
+}
+
+<div class="row justify-content-center">
+<div class="col-md-6">
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white fw-bold">⚠️ Xác nhận xoá</div>
+    <div class="card-body">
+        <p>Bạn có chắc muốn xoá hụi viên <strong>@Model.Name</strong> không?</p>
+        <form asp-action="Delete" method="post">
+            <input asp-for="Id" type="hidden" />
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">🗑️ Xoá</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Huỷ</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>

@@ -1,0 +1,101 @@
+@model AppQLHui.Models.Tontine
+@{
+    ViewData["Title"] = "Chi tiết dây hụi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>📋 @Model.Name</h4>
+    <div>
+        @if (Model.Status == AppQLHui.Models.TontineStatus.Running)
+        {
+            <a asp-controller="Draw" asp-action="Index" asp-route-tontineId="@Model.Id" class="btn btn-success">🎯 Khui hụi</a>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary">← Quay lại</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header fw-bold">Thông tin dây hụi</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-6">Loại:</dt><dd class="col-6">@Model.Type</dd>
+                    <dt class="col-6">Mệnh giá:</dt><dd class="col-6 text-success fw-bold">@Model.BaseAmount.ToString("N0") đ</dd>
+                    <dt class="col-6">Tổng phần:</dt><dd class="col-6">@Model.TotalShares</dd>
+                    <dt class="col-6">Tiền thảo:</dt><dd class="col-6">@Model.CommissionFee.ToString("N0") đ</dd>
+                    <dt class="col-6">Thu thảo:</dt><dd class="col-6">@(Model.FeeType == AppQLHui.Models.FeeType.Before ? "Thu trước" : "Thu sau")</dd>
+                    <dt class="col-6">Trạng thái:</dt><dd class="col-6">
+                        @{
+                            var sc = Model.Status switch {
+                                AppQLHui.Models.TontineStatus.Running => "badge bg-success",
+                                AppQLHui.Models.TontineStatus.Completed => "badge bg-secondary",
+                                _ => "badge bg-warning text-dark"
+                            };
+                            var st = Model.Status switch {
+                                AppQLHui.Models.TontineStatus.Running => "Đang chạy",
+                                AppQLHui.Models.TontineStatus.Completed => "Hoàn tất",
+                                _ => "Nháp"
+                            };
+                        }
+                        <span class="@sc">@st</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header fw-bold">Danh sách phần hụi</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>#</th><th>Hụi viên</th><th>Trạng thái</th><th>Kỳ hốt</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Shares.OrderBy(s => s.Id))
+                        {
+                            <tr>
+                                <td>@s.Id</td>
+                                <td>@s.Player?.Name</td>
+                                <td>
+                                    @if (s.Status == AppQLHui.Models.ShareStatus.Living)
+                                    { <span class="badge bg-success">Sống</span> }
+                                    else
+                                    { <span class="badge bg-danger">Chết</span> }
+                                </td>
+                                <td>@(s.WonDrawId.HasValue ? $"Kỳ #{s.WonDraw?.SequenceNumber}" : "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Draws.Any())
+{
+    <div class="card mt-3">
+        <div class="card-header fw-bold">Lịch sử khui</div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr><th>Kỳ</th><th>Ngày</th><th>Người trúng</th><th>Tiền thăm</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Draws.OrderBy(d => d.SequenceNumber))
+                    {
+                        <tr>
+                            <td>#@d.SequenceNumber</td>
+                            <td>@d.DrawDate.ToString("dd/MM/yyyy")</td>
+                            <td>@d.WinningShare?.Player?.Name</td>
+                            <td>@d.BidAmount.ToString("N0") đ</td>
+                            <td><a asp-controller="Draw" asp-action="Bill" asp-route-drawId="@d.Id" class="btn btn-xs btn-outline-primary btn-sm">Xem bill</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

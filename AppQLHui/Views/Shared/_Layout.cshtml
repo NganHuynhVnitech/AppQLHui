@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Phần mềm Quản lý Hụi</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .navbar-brand { font-weight: 700; font-size: 1.3rem; color: #198754 !important; }
+        .sidebar { min-height: calc(100vh - 60px); background: #1a1a2e; }
+        .sidebar .nav-link { color: #ccc; padding: 10px 16px; border-radius: 6px; margin: 2px 0; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #198754; color: #fff; }
+        .sidebar .nav-link i { margin-right: 8px; width: 20px; text-align: center; }
+        .sidebar .nav-section { color: #aaa; font-size: 0.75rem; text-transform: uppercase; padding: 10px 16px 4px; }
+        .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-radius: 12px; }
+        .stat-card { border-left: 4px solid; }
+        .stat-card.green { border-left-color: #198754; }
+        .stat-card.blue { border-left-color: #0d6efd; }
+        .stat-card.orange { border-left-color: #fd7e14; }
+        .badge-living { background: #198754; }
+        .badge-dead { background: #dc3545; }
+        .text-positive { color: #198754; font-weight: 600; }
+        .text-negative { color: #dc3545; font-weight: 600; }
+        .draw-panel { min-height: 500px; }
+        .share-item { cursor: pointer; padding: 8px 12px; border-radius: 6px; border: 1px solid #dee2e6; margin-bottom: 6px; }
+        .share-item:hover { border-color: #198754; background: #f0fff4; }
+        .share-item.selected { border-color: #198754; background: #d1e7dd; }
+        @@media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+<header class="navbar navbar-expand-sm navbar-dark bg-dark no-print">
+    <div class="container-fluid">
+        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+            🎰 QL Hụi Pro
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">📊 Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Player" asp-action="Index">👥 Hụi viên</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Tontine" asp-action="Index">📋 Dây hụi</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Draw" asp-action="Index">🎯 Khui hụi</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Report" asp-action="Index">📈 Báo cáo</a></li>
+            </ul>
+        </div>
+    </div>
+</header>
+<div class="container-fluid">
+    <div class="row">
+        <main class="col py-3">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show no-print" role="alert">
+                    ✅ @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show no-print" role="alert">
+                    ❌ @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+</div>
+<footer class="border-top text-muted py-2 text-center small no-print">
+    &copy; 2026 - Phần mềm Quản lý Hụi Pro
+</footer>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

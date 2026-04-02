@@ -1,0 +1,43 @@
+@model IEnumerable<AppQLHui.Models.Player>
+@{
+    ViewData["Title"] = "Danh sách Hụi viên";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>👥 Danh sách Hụi viên</h4>
+    <a asp-action="Create" class="btn btn-primary">➕ Thêm hụi viên</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover table-striped mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Tên hụi viên</th>
+                    <th>Số điện thoại</th>
+                    <th>Tên Zalo</th>
+                    <th>Ngày tham gia</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>@p.Id</td>
+                        <td><strong>@p.Name</strong></td>
+                        <td>@p.Phone</td>
+                        <td>@p.ZaloName</td>
+                        <td>@p.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-warning">Sửa</a>
+                            <a asp-controller="Report" asp-action="PlayerHistory" asp-route-playerId="@p.Id" class="btn btn-sm btn-outline-info">Lịch sử</a>
+                            <a asp-action="Delete" asp-route-id="@p.Id" class="btn btn-sm btn-outline-danger">Xoá</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

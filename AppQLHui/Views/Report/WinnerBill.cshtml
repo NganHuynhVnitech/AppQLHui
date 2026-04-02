@@ -1,0 +1,52 @@
+@model AppQLHui.Models.Draw
+@{
+    ViewData["Title"] = "Giấy giao hụi";
+    var winner = Model.WinningShare?.Player;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h4>📄 Giấy giao hụi</h4>
+    <button onclick="window.print()" class="btn btn-outline-secondary">🖨️ In</button>
+</div>
+
+<div class="card" style="max-width:600px">
+    <div class="card-header text-center">
+        <h5 class="mb-0">GIẤY GIAO HỤI</h5>
+        <small class="text-muted">@Model.Tontine.Name - Kỳ #@Model.SequenceNumber</small>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless">
+            <tr><th>Ngày khui:</th><td>@Model.DrawDate.ToString("dd/MM/yyyy")</td></tr>
+            <tr><th>Dây hụi:</th><td>@Model.Tontine.Name</td></tr>
+            <tr><th>Kỳ số:</th><td>#@Model.SequenceNumber</td></tr>
+            <tr><th>Người trúng:</th><td><strong class="text-success">@winner?.Name</strong></td></tr>
+            <tr><th>SĐT:</th><td>@winner?.Phone</td></tr>
+            <tr><th>Tiền thăm kêu:</th><td>@Model.BidAmount.ToString("N0") đ</td></tr>
+            <tr><th>Tiền thảo:</th><td>@Model.CollectedFee.ToString("N0") đ</td></tr>
+        </table>
+
+        <hr />
+        <h6 class="fw-bold">Chi tiết thu từ hụi viên:</h6>
+        <table class="table table-sm table-bordered">
+            <thead class="table-dark">
+                <tr><th>Hụi viên</th><th class="text-end">Đóng</th><th class="text-end">Nhận</th><th class="text-end">Net</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var tx in Model.Transactions.OrderByDescending(t => t.AmountReceive))
+                {
+                    var nc = tx.NetTotal >= 0 ? "text-positive" : "text-negative";
+                    <tr class="@(tx.AmountReceive > 0 ? "table-success" : "")">
+                        <td>@tx.Player.Name @(tx.AmountReceive > 0 ? "🏆" : "")</td>
+                        <td class="text-end">@(tx.AmountPay > 0 ? tx.AmountPay.ToString("N0")+" đ" : "-")</td>
+                        <td class="text-end fw-bold text-success">@(tx.AmountReceive > 0 ? tx.AmountReceive.ToString("N0")+" đ" : "-")</td>
+                        <td class="text-end @nc">@(tx.NetTotal >= 0 ? "+" : "")@tx.NetTotal.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="text-center text-muted small mt-3">
+            <em>Chữ ký người nhận: ___________________________</em>
+        </div>
+    </div>
+</div>

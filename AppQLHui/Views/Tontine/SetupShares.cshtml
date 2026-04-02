@@ -1,0 +1,46 @@
+@model AppQLHui.Models.Tontine
+@{
+    ViewData["Title"] = "Phân chia phần hụi";
+    var players = (List<AppQLHui.Models.Player>)ViewBag.Players;
+    int n = Model.TotalShares;
+}
+
+<div class="card">
+    <div class="card-header fw-bold">
+        🔢 Phân chia @n phần hụi cho dây: <strong>@Model.Name</strong>
+        <small class="text-muted ms-2">(Mệnh giá: @Model.BaseAmount.ToString("N0")đ)</small>
+    </div>
+    <div class="card-body">
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+        <form asp-action="SetupShares" method="post">
+            <input asp-for="Id" type="hidden" name="id" />
+            <div class="alert alert-info">
+                Chọn người chơi cho từng phần hụi. Mỗi người chơi có thể được chọn nhiều lần (cầm nhiều phần).
+            </div>
+            <div class="row g-2">
+                @for (int i = 0; i < n; i++)
+                {
+                    <div class="col-md-4 col-sm-6">
+                        <div class="input-group">
+                            <span class="input-group-text fw-bold">Phần @(i + 1)</span>
+                            <select name="playerIds" class="form-select" required>
+                                <option value="">-- Chọn người --</option>
+                                @foreach (var p in players)
+                                {
+                                    <option value="@p.Id">@p.Name @(p.Phone != null ? $"({p.Phone})" : "")</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success">✅ Xác nhận & Khởi động dây hụi</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Bỏ qua</a>
+            </div>
+        </form>
+    </div>
+</div>

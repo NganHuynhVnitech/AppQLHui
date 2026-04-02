@@ -1,0 +1,88 @@
+@model IEnumerable<AppQLHui.Models.Transaction>
+@{
+    ViewData["Title"] = "Hóa đơn kỳ khui";
+    var draw = (AppQLHui.Models.Draw)ViewBag.Draw;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h4>🖨️ Hóa đơn kỳ khui - @draw.Tontine.Name - Kỳ #@draw.SequenceNumber</h4>
+    <div>
+        <button onclick="window.print()" class="btn btn-outline-secondary">🖨️ In</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">← Quay lại</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Dây hụi:</strong> @draw.Tontine.Name
+            </div>
+            <div class="col-md-4">
+                <strong>Kỳ:</strong> #@draw.SequenceNumber | <strong>Ngày:</strong> @draw.DrawDate.ToString("dd/MM/yyyy")
+            </div>
+            <div class="col-md-4">
+                <strong>Người trúng:</strong> @draw.WinningShare?.Player?.Name |
+                <strong>Tiền thăm:</strong> @draw.BidAmount.ToString("N0") đ
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-bordered mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Hụi viên</th>
+                    <th class="text-end">Phải đóng</th>
+                    <th class="text-end">Được nhận</th>
+                    <th class="text-end">Thực nhận/đóng (Net)</th>
+                    <th class="text-center">Thanh toán</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tx in Model.OrderByDescending(t => t.AmountReceive))
+                {
+                    var netClass = tx.NetTotal >= 0 ? "text-positive" : "text-negative";
+                    <tr class="@(tx.AmountReceive > 0 ? "table-success" : "")">
+                        <td>
+                            <strong>@tx.Player.Name</strong>
+                            @if (tx.AmountReceive > 0)
+                            { <span class="badge bg-success ms-1">🏆 Trúng</span> }
+                            @if (tx.Player.Phone != null)
+                            { <small class="text-muted d-block">@tx.Player.Phone</small> }
+                        </td>
+                        <td class="text-end">@(tx.AmountPay > 0 ? tx.AmountPay.ToString("N0") + " đ" : "-")</td>
+                        <td class="text-end text-success fw-bold">@(tx.AmountReceive > 0 ? tx.AmountReceive.ToString("N0") + " đ" : "-")</td>
+                        <td class="text-end @netClass fw-bold">
+                            @(tx.NetTotal >= 0 ? "+" : "")@tx.NetTotal.ToString("N0") đ
+                        </td>
+                        <td class="text-center">
+                            @if (tx.IsSettled)
+                            { <span class="badge bg-success">✅ Đã TT</span> }
+                            else
+                            { <span class="badge bg-warning text-dark">⏳ Chưa TT</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-secondary fw-bold">
+                <tr>
+                    <td>Tổng cộng</td>
+                    <td class="text-end">@Model.Sum(t => t.AmountPay).ToString("N0") đ</td>
+                    <td class="text-end">@Model.Sum(t => t.AmountReceive).ToString("N0") đ</td>
+                    <td class="text-end">@Model.Sum(t => t.NetTotal).ToString("N0") đ</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div class="card-footer text-muted small">
+        Tiền thảo thu được kỳ này: <strong>@draw.CollectedFee.ToString("N0") đ</strong>
+    </div>
+</div>
+
+<div class="mt-3 no-print">
+    <a asp-controller="Report" asp-action="WinnerBill" asp-route-drawId="@draw.Id"
+       class="btn btn-outline-primary">📄 Giấy giao hụi (người trúng)</a>
+    <a asp-controller="Tontine" asp-action="Details" asp-route-id="@draw.TontineId"
+       class="btn btn-outline-secondary">📋 Xem dây hụi</a>
+</div>

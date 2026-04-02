@@ -1,0 +1,70 @@
+@model IEnumerable<AppQLHui.Models.Tontine>
+@{
+    ViewData["Title"] = "Danh sách Dây hụi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>📋 Danh sách Dây hụi</h4>
+    <a asp-action="Create" class="btn btn-primary">➕ Tạo dây hụi</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Tên</th>
+                    <th>Loại</th>
+                    <th>Mệnh giá</th>
+                    <th>Số phần</th>
+                    <th>Tiền thảo</th>
+                    <th>Trạng thái</th>
+                    <th>Phần sống/chết</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    var living = t.Shares.Count(s => s.Status == AppQLHui.Models.ShareStatus.Living);
+                    var dead = t.Shares.Count(s => s.Status == AppQLHui.Models.ShareStatus.Dead);
+                    var statusClass = t.Status switch {
+                        AppQLHui.Models.TontineStatus.Running => "bg-success",
+                        AppQLHui.Models.TontineStatus.Completed => "bg-secondary",
+                        _ => "bg-warning text-dark"
+                    };
+                    var statusText = t.Status switch {
+                        AppQLHui.Models.TontineStatus.Running => "Đang chạy",
+                        AppQLHui.Models.TontineStatus.Completed => "Hoàn tất",
+                        _ => "Nháp"
+                    };
+                    <tr>
+                        <td><strong>@t.Name</strong></td>
+                        <td>@t.Type</td>
+                        <td>@t.BaseAmount.ToString("N0") đ</td>
+                        <td>@t.TotalShares</td>
+                        <td>@t.CommissionFee.ToString("N0") đ</td>
+                        <td><span class="badge @statusClass">@statusText</span></td>
+                        <td>
+                            <span class="badge bg-success">Sống: @living</span>
+                            <span class="badge bg-danger">Chết: @dead</span>
+                        </td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-outline-info">Chi tiết</a>
+                            @if (t.Status == AppQLHui.Models.TontineStatus.Running)
+                            {
+                                <a asp-controller="Draw" asp-action="Index" asp-route-tontineId="@t.Id"
+                                   class="btn btn-sm btn-success">Khui</a>
+                            }
+                            @if (t.Status == AppQLHui.Models.TontineStatus.Draft)
+                            {
+                                <a asp-action="SetupShares" asp-route-id="@t.Id"
+                                   class="btn btn-sm btn-warning">Phân chia</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,276 @@
+@{
+    ViewData["Title"] = "Khui hụi";
+    var runningTontines = (List<AppQLHui.Models.Tontine>)ViewBag.RunningTontines;
+    var selectedTontine = ViewBag.SelectedTontine as AppQLHui.Models.Tontine;
+    var livingShares = ViewBag.LivingShares as List<AppQLHui.Models.TontineShare>;
+}
+
+<h4 class="mb-3">🎯 Màn hình Khui hụi</h4>
+
+<div class="row g-3">
+    <!-- PANEL TRÁI: Chọn dây + người trúng -->
+    <div class="col-md-5">
+        <div class="card draw-panel">
+            <div class="card-header bg-success text-white fw-bold">📋 Panel 1: Chọn dây & Người hốt</div>
+            <div class="card-body">
+                <!-- Bước 1: Chọn dây hụi -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">1. Chọn dây hụi đang chạy</label>
+                    <form method="get" asp-action="Index">
+                        <div class="input-group">
+                            <select name="tontineId" class="form-select" id="tontineSelector"
+                                    onchange="this.form.submit()">
+                                <option value="">-- Chọn dây hụi --</option>
+                                @foreach (var t in runningTontines)
+                                {
+                                    <option value="@t.Id" selected="@(selectedTontine?.Id == t.Id ? "selected" : null)">
+                                        @t.Name (M=@t.BaseAmount.ToString("N0")đ, @t.Shares.Count(s=>s.Status==AppQLHui.Models.ShareStatus.Living) phần sống)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </form>
+                </div>
+
+                @if (selectedTontine != null && livingShares != null)
+                {
+                    <!-- Thông tin dây -->
+                    <div class="alert alert-info py-2 small">
+                        <strong>@selectedTontine.Name</strong> | Mệnh giá: @selectedTontine.BaseAmount.ToString("N0")đ |
+                        Thảo: @selectedTontine.CommissionFee.ToString("N0")đ |
+                        Còn <strong>@livingShares.Count</strong> phần sống
+                    </div>
+
+                    <!-- Bước 2: Nhập tiền thăm -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">2. Tiền thăm kêu (B)</label>
+                        <div class="input-group">
+                            <input type="number" id="bidAmount" class="form-control"
+                                   min="0" max="@selectedTontine.BaseAmount" value="0"
+                                   placeholder="Tiền thăm"/>
+                            <span class="input-group-text">đ</span>
+                        </div>
+                        <small class="text-muted">Tối đa: @selectedTontine.BaseAmount.ToString("N0")đ</small>
+                    </div>
+
+                    <!-- Bước 3: Chọn người trúng -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">3. Phần trúng (Chọn hoặc Quay số)</label>
+                        <div class="d-flex gap-2 mb-2">
+                            <!-- Hidden target for admin rigging -->
+                            <select id="targetPlayerOverride" class="form-select form-select-sm"
+                                    title="Admin: Chốt người trúng (ẩn)">
+                                <option value="">🎰 Quay ngẫu nhiên</option>
+                                @foreach (var s in livingShares.GroupBy(s => s.PlayerId))
+                                {
+                                    <option value="@s.Key">🎯 Chốt: @s.First().Player.Name</option>
+                                }
+                            </select>
+                            <button class="btn btn-warning fw-bold" onclick="randomDraw(@selectedTontine.Id)">
+                                🎲 Quay số
+                            </button>
+                        </div>
+
+                        <div id="shareList">
+                            @foreach (var s in livingShares)
+                            {
+                                <div class="share-item" id="share-@s.Id"
+                                     onclick="selectShare(@s.Id, '@s.Player.Name', @s.PlayerId)">
+                                    <span class="badge bg-success me-1">Sống</span>
+                                    <strong>@s.Player.Name</strong>
+                                    <small class="text-muted ms-2">Phần #@s.Id @(s.Player.Phone != null ? $"| {s.Player.Phone}" : "")</small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Selected winner display -->
+                    <div id="winnerDisplay" class="alert alert-success d-none">
+                        🏆 Người trúng: <strong id="winnerName"></strong>
+                    </div>
+
+                    <!-- Preview button -->
+                    <button class="btn btn-primary w-100 mt-2" onclick="previewDraw(@selectedTontine.Id)">
+                        👁️ Xem preview tính tiền
+                    </button>
+                }
+                else if (!runningTontines.Any())
+                {
+                    <div class="alert alert-warning">
+                        Không có dây hụi nào đang chạy.
+                        <a asp-controller="Tontine" asp-action="Create">Tạo dây hụi mới</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL PHẢI: Preview bảng tính tiền -->
+    <div class="col-md-7">
+        <div class="card draw-panel">
+            <div class="card-header bg-primary text-white fw-bold">📊 Panel 2: Bảng tính tiền Preview</div>
+            <div class="card-body" id="previewPanel">
+                <div class="text-center text-muted py-5">
+                    <span class="fs-1">📊</span>
+                    <p>Chọn dây hụi và người trúng, rồi nhấn "Xem preview" để xem bảng tính tiền.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Chốt kỳ khui -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">✅ Xác nhận chốt kỳ khui</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmBody"></div>
+            <div class="modal-footer">
+                <form asp-action="Execute" method="post" id="executeForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tontineId" id="execTontineId" />
+                    <input type="hidden" name="winningShareId" id="execShareId" />
+                    <input type="hidden" name="bidAmount" id="execBidAmount" />
+                    <input type="hidden" name="drawDate" id="execDrawDate" />
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+                    <button type="submit" class="btn btn-success fw-bold">🎯 Chốt kỳ khui</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let selectedShareId = null;
+    let selectedPlayerName = '';
+    let previewData = null;
+
+    function selectShare(shareId, playerName, playerId) {
+        // Remove previous selection
+        document.querySelectorAll('.share-item').forEach(el => el.classList.remove('selected'));
+        document.getElementById('share-' + shareId)?.classList.add('selected');
+        selectedShareId = shareId;
+        selectedPlayerName = playerName;
+        document.getElementById('winnerName').textContent = playerName;
+        document.getElementById('winnerDisplay').classList.remove('d-none');
+    }
+
+    function randomDraw(tontineId) {
+        const target = document.getElementById('targetPlayerOverride').value;
+        let url = `/Draw/RandomDraw?tontineId=${tontineId}`;
+        if (target) url += `&targetPlayerId=${target}`;
+
+        fetch(url)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    selectShare(res.shareId, res.playerName, res.playerId);
+                    // Animate selection
+                    const el = document.getElementById('share-' + res.shareId);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    alert(res.message);
+                }
+            });
+    }
+
+    function previewDraw(tontineId) {
+        if (!selectedShareId) { alert('Vui lòng chọn người trúng!'); return; }
+        const bid = parseFloat(document.getElementById('bidAmount').value) || 0;
+
+        fetch('/Draw/Preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `tontineId=${tontineId}&winningShareId=${selectedShareId}&bidAmount=${bid}`
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                previewData = res.data;
+                renderPreview(res.data, tontineId);
+            } else {
+                alert('Lỗi: ' + res.message);
+            }
+        });
+    }
+
+    function renderPreview(data, tontineId) {
+        let html = `
+        <div class="row g-2 mb-3">
+            <div class="col-4"><div class="card text-center p-2 border-success">
+                <small class="text-muted">Tiền sống đóng</small>
+                <div class="fw-bold text-success">${fmtNum(data.totalFromLiving)} đ</div>
+            </div></div>
+            <div class="col-4"><div class="card text-center p-2 border-danger">
+                <small class="text-muted">Tiền chết đóng</small>
+                <div class="fw-bold text-danger">${fmtNum(data.totalFromDead)} đ</div>
+            </div></div>
+            <div class="col-4"><div class="card text-center p-2 border-primary">
+                <small class="text-muted">Người trúng nhận</small>
+                <div class="fw-bold text-primary">${fmtNum(data.totalReceived)} đ</div>
+            </div></div>
+        </div>
+        <p class="text-muted small mb-2">
+            🏆 Người trúng: <strong>${data.winnerPlayerName}</strong> |
+            Tiền thăm: <strong>${fmtNum(data.bidAmount)} đ</strong> |
+            Thảo: <strong>${fmtNum(data.commissionFee)} đ</strong>
+        </p>
+        <table class="table table-sm table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Hụi viên</th>
+                    <th class="text-end">Phải đóng</th>
+                    <th class="text-end">Được nhận</th>
+                    <th class="text-end">Thực nhận/đóng</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        data.playerTransactions.forEach(pt => {
+            const netClass = pt.netTotal >= 0 ? 'text-positive' : 'text-negative';
+            const netSign = pt.netTotal >= 0 ? '+ ' : '';
+            const winner = pt.isWinner ? ' 🏆' : '';
+            html += `<tr class="${pt.isWinner ? 'table-success' : ''}">
+                <td><strong>${pt.playerName}</strong>${winner}
+                    <small class="text-muted d-block">Sống: ${pt.livingShareCount} | Chết: ${pt.deadShareCount}</small>
+                </td>
+                <td class="text-end">${pt.amountPay > 0 ? fmtNum(pt.amountPay) + ' đ' : '-'}</td>
+                <td class="text-end text-success">${pt.amountReceive > 0 ? fmtNum(pt.amountReceive) + ' đ' : '-'}</td>
+                <td class="text-end ${netClass}">${netSign}${fmtNum(Math.abs(pt.netTotal))} đ</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-success fw-bold" onclick="confirmDraw(${tontineId}, ${data.winningShareId}, ${data.bidAmount}, '${data.winnerPlayerName}', ${data.totalReceived})">
+                ✅ Chốt kỳ khui
+            </button>
+        </div>`;
+
+        document.getElementById('previewPanel').innerHTML = html;
+    }
+
+    function confirmDraw(tontineId, shareId, bid, winner, total) {
+        document.getElementById('execTontineId').value = tontineId;
+        document.getElementById('execShareId').value = shareId;
+        document.getElementById('execBidAmount').value = bid;
+        document.getElementById('execDrawDate').value = new Date().toISOString().split('T')[0] + 'T12:00:00';
+        document.getElementById('confirmBody').innerHTML =
+            `<p>Xác nhận chốt kỳ khui?</p>
+             <ul>
+               <li>Người trúng: <strong>${winner}</strong></li>
+               <li>Tiền thăm: <strong>${fmtNum(bid)} đ</strong></li>
+               <li>Tổng nhận: <strong class="text-success">${fmtNum(total)} đ</strong></li>
+             </ul>`;
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+
+    function fmtNum(n) {
+        return Math.round(n).toLocaleString('vi-VN');
+    }
+</script>
+}

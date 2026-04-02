@@ -1,0 +1,55 @@
+@model AppQLHui.Models.Tontine
+@{
+    ViewData["Title"] = "Tạo dây hụi";
+}
+
+<div class="row justify-content-center">
+<div class="col-md-7">
+<div class="card">
+    <div class="card-header fw-bold">📋 Tạo dây hụi mới</div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
+                    <input asp-for="Name" class="form-control" placeholder="VD: Ngày 100 D2" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Type" class="form-label fw-semibold"></label>
+                    <select asp-for="Type" class="form-select"
+                            asp-items="Html.GetEnumSelectList<AppQLHui.Models.TontineType>()"></select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="BaseAmount" class="form-label fw-semibold">Mệnh giá (M)</label>
+                    <input asp-for="BaseAmount" class="form-control" type="number" min="0" placeholder="100000" />
+                    <span asp-validation-for="BaseAmount" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="TotalShares" class="form-label fw-semibold">Số phần (N)</label>
+                    <input asp-for="TotalShares" class="form-control" type="number" min="2" placeholder="10" />
+                    <span asp-validation-for="TotalShares" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="CommissionFee" class="form-label fw-semibold">Tiền thảo (F)</label>
+                    <input asp-for="CommissionFee" class="form-control" type="number" min="0" placeholder="50000" />
+                    <span asp-validation-for="CommissionFee" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="FeeType" class="form-label fw-semibold">Cách thu thảo</label>
+                    <select asp-for="FeeType" class="form-select"
+                            asp-items="@(new SelectList(new[]{ new{V="Before",T="Thảo thu trước"}, new{V="After",T="Thảo thu sau"} }, "V", "T"))"></select>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success">💾 Tạo & Phân chia phần</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Huỷ</a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }
