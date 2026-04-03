@@ -56,11 +56,30 @@ namespace AppQLHui.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> SetupShares(int id, int[] playerIds)
+        public async Task<IActionResult> SetupShares(int id, IFormCollection form)
         {
             try
             {
-                await _drawService.GenerateSharesAsync(id, playerIds);
+                Dictionary<int, int> positionMap = new Dictionary<int, int>();
+                var tontine = await _db.Tontines.FindAsync(id);
+                if (tontine == null) return NotFound();
+
+                for (int i = 1; i <= tontine.TotalShares; i++)
+                {
+                    string key = $"player_{i}";
+                    if (form.ContainsKey(key) && int.TryParse(form[key], out int playerId))
+                    {
+                        positionMap[i] = playerId;
+                    }
+                }
+
+                if (positionMap.Count != tontine.TotalShares)
+                {
+                    TempData["Error"] = "Vui lòng chọn đầy đủ người chơi cho tất cả các phần.";
+                    return RedirectToAction("SetupShares", new { id });
+                }
+
+                await _drawService.GenerateSharesAsync(id, positionMap);
                 TempData["Success"] = "Đã phân chia phần hụi thành công! Dây hụi đang chạy.";
                 return RedirectToAction(nameof(Index));
             }

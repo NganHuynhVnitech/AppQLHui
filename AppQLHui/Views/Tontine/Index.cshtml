@@ -1,70 +1,102 @@
 @model IEnumerable<AppQLHui.Models.Tontine>
-@{
-    ViewData["Title"] = "Danh sách Dây hụi";
-}
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-800 mb-0">📋 Quản Lý Dây Hụi</h2>
+        <a asp-action="Create" class="btn btn-gradient-success px-4 shadow-sm rounded-pill">
+            <i class="bi bi-plus-lg me-1"></i> Tạo Dây Hụi Mới
+        </a>
+    </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4>📋 Danh sách Dây hụi</h4>
-    <a asp-action="Create" class="btn btn-primary">➕ Tạo dây hụi</a>
-</div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th class="ps-4 py-3">Tên Dây & Loại</th>
+                            <th>Mệnh Giá</th>
+                            <th>Số Phần</th>
+                            <th>Tiền Thảo</th>
+                            <th class="text-center">Trạng Thái</th>
+                            <th class="text-center">Phần Sống/Chết</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    Chưa có dây hụi nào được tạo.
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var t in Model)
+                        {
+                            var living = t.Shares.Count(s => s.Status == AppQLHui.Models.ShareStatus.Living);
+                            var dead = t.Shares.Count(s => s.Status == AppQLHui.Models.ShareStatus.Dead);
+                            
+                            var statusBadge = t.Status switch {
+                                AppQLHui.Models.TontineStatus.Running => "bg-success",
+                                AppQLHui.Models.TontineStatus.Completed => "bg-secondary",
+                                _ => "bg-warning text-dark"
+                            };
+                            var statusText = t.Status switch {
+                                AppQLHui.Models.TontineStatus.Running => "Đang Chạy",
+                                AppQLHui.Models.TontineStatus.Completed => "Hoàn Tất",
+                                _ => "Đang Chờ"
+                            };
 
-<div class="card">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-dark">
-                <tr>
-                    <th>Tên</th>
-                    <th>Loại</th>
-                    <th>Mệnh giá</th>
-                    <th>Số phần</th>
-                    <th>Tiền thảo</th>
-                    <th>Trạng thái</th>
-                    <th>Phần sống/chết</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var t in Model)
-                {
-                    var living = t.Shares.Count(s => s.Status == AppQLHui.Models.ShareStatus.Living);
-                    var dead = t.Shares.Count(s => s.Status == AppQLHui.Models.ShareStatus.Dead);
-                    var statusClass = t.Status switch {
-                        AppQLHui.Models.TontineStatus.Running => "bg-success",
-                        AppQLHui.Models.TontineStatus.Completed => "bg-secondary",
-                        _ => "bg-warning text-dark"
-                    };
-                    var statusText = t.Status switch {
-                        AppQLHui.Models.TontineStatus.Running => "Đang chạy",
-                        AppQLHui.Models.TontineStatus.Completed => "Hoàn tất",
-                        _ => "Nháp"
-                    };
-                    <tr>
-                        <td><strong>@t.Name</strong></td>
-                        <td>@t.Type</td>
-                        <td>@t.BaseAmount.ToString("N0") đ</td>
-                        <td>@t.TotalShares</td>
-                        <td>@t.CommissionFee.ToString("N0") đ</td>
-                        <td><span class="badge @statusClass">@statusText</span></td>
-                        <td>
-                            <span class="badge bg-success">Sống: @living</span>
-                            <span class="badge bg-danger">Chết: @dead</span>
-                        </td>
-                        <td>
-                            <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-outline-info">Chi tiết</a>
-                            @if (t.Status == AppQLHui.Models.TontineStatus.Running)
-                            {
-                                <a asp-controller="Draw" asp-action="Index" asp-route-tontineId="@t.Id"
-                                   class="btn btn-sm btn-success">Khui</a>
-                            }
-                            @if (t.Status == AppQLHui.Models.TontineStatus.Draft)
-                            {
-                                <a asp-action="SetupShares" asp-route-id="@t.Id"
-                                   class="btn btn-sm btn-warning">Phân chia</a>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold fs-6">@t.Name</div>
+                                    <span class="badge bg-light text-dark border small">@t.Type</span>
+                                </td>
+                                <td class="fw-bold">@t.BaseAmount.ToString("N0") đ</td>
+                                <td>@t.TotalShares phần</td>
+                                <td class="text-secondary">@t.CommissionFee.ToString("N0") đ</td>
+                                <td class="text-center">
+                                    <span class="badge @statusBadge rounded-pill">@statusText</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">S: @living</span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">C: @dead</span>
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group shadow-sm rounded-pill overflow-hidden border">
+                                        <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-light px-3" title="Chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (t.Status == AppQLHui.Models.TontineStatus.Running)
+                                        {
+                                            <a asp-controller="Draw" asp-action="Index" asp-route-tontineId="@t.Id" 
+                                               class="btn btn-sm btn-success px-3" title="Khui Hụi">
+                                                <i class="bi bi-play-fill"></i>
+                                            </a>
+                                        }
+                                        @if (t.Status == AppQLHui.Models.TontineStatus.Draft)
+                                        {
+                                            <a asp-action="SetupShares" asp-route-id="@t.Id" 
+                                               class="btn btn-sm btn-warning px-3" title="Cài đặt phần hụi">
+                                                <i class="bi bi-person-plus"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .bg-success-subtle { background-color: #ecfdf5; }
+    .bg-danger-subtle { background-color: #fef2f2; }
+    .border-success-subtle { border-color: #d1fae5 !important; }
+    .border-danger-subtle { border-color: #fee2e2 !important; }
+</style>

@@ -20,26 +20,35 @@
             <div class="alert alert-info">
                 Chọn người chơi cho từng phần hụi. Mỗi người chơi có thể được chọn nhiều lần (cầm nhiều phần).
             </div>
-            <div class="row g-2">
-                @for (int i = 0; i < n; i++)
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
+                @for (int i = 1; i <= n; i++)
                 {
-                    <div class="col-md-4 col-sm-6">
-                        <div class="input-group">
-                            <span class="input-group-text fw-bold">Phần @(i + 1)</span>
-                            <select name="playerIds" class="form-select" required>
-                                <option value="">-- Chọn người --</option>
-                                @foreach (var p in players)
-                                {
-                                    <option value="@p.Id">@p.Name @(p.Phone != null ? $"({p.Phone})" : "")</option>
-                                }
-                            </select>
+                    <div class="col">
+                        <div class="card h-100 shadow-sm border-0 bg-light">
+                            <div class="card-body p-2">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                        @i
+                                    </div>
+                                    <span class="fw-bold small text-muted text-uppercase">Vị trí #@i</span>
+                                </div>
+                                <select name="player_@i" class="form-select border-0 shadow-none bg-white rounded-3 custom-select-premium" required>
+                                    <option value="">-- Chọn hụi viên --</option>
+                                    @foreach (var p in players)
+                                    {
+                                        <option value="@p.Id">@p.Name @(p.Phone != null ? $"({p.Phone})" : "")</option>
+                                    }
+                                </select>
+                            </div>
                         </div>
                     </div>
                 }
             </div>
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-success">✅ Xác nhận & Khởi động dây hụi</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Bỏ qua</a>
+            <div class="d-flex gap-3 mt-5 pt-3 border-top justify-content-center">
+                <button type="submit" class="btn btn-lg btn-gradient-success px-5 rounded-pill shadow">
+                    <i class="bi bi-play-fill"></i> BẮT ĐẦU DÂY HỤI
+                </button>
+                <a asp-action="Index" class="btn btn-lg btn-light px-4 rounded-pill">Bỏ qua</a>
             </div>
         </form>
     </div>

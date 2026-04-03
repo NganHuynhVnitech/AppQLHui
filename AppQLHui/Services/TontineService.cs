@@ -52,16 +52,22 @@ namespace AppQLHui.Services
 
             decimal totalFromDead = deadShares.Count * tontine.BaseAmount;
             decimal totalFromLiving = livingSharesExcludingWinner.Count * (tontine.BaseAmount - bidAmount);
+            
+            // Professional Logic: Total Received = (Living - 1) * (Base - Bid) + (Dead * Base) - Thao
+            // (Note: Winner's current winning share is not part of totalFromLiving or totalFromDead here based on above logic)
             decimal totalReceived = totalFromDead + totalFromLiving - tontine.CommissionFee;
 
             // Build per-player aggregation
-            // Key: PlayerId → (amountPay, amountReceive)
-            var playerMap = new Dictionary<int, (string Name, string? Phone, int LivingCount, int DeadCount, decimal Pay, decimal Receive)>();
+            // Key: PlayerId → (Name, Phone, LivingCount, DeadCount, Pay, Receive, Positions)
+            var playerMap = new Dictionary<int, (string Name, string? Phone, int LivingCount, int DeadCount, decimal Pay, decimal Receive, List<int> Positions)>();
 
             void EnsurePlayer(TontineShare s)
             {
                 if (!playerMap.ContainsKey(s.PlayerId))
-                    playerMap[s.PlayerId] = (s.Player.Name, s.Player.Phone, 0, 0, 0m, 0m);
+                    playerMap[s.PlayerId] = (s.Player.Name, s.Player.Phone, 0, 0, 0m, 0m, new List<int>());
+                
+                if (!playerMap[s.PlayerId].Positions.Contains(s.Position))
+                    playerMap[s.PlayerId].Positions.Add(s.Position);
             }
 
             // Dead shares → pay BaseAmount each
@@ -69,7 +75,7 @@ namespace AppQLHui.Services
             {
                 EnsurePlayer(s);
                 var cur = playerMap[s.PlayerId];
-                playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount, cur.DeadCount + 1, cur.Pay + tontine.BaseAmount, cur.Receive);
+                playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount, cur.DeadCount + 1, cur.Pay + tontine.BaseAmount, cur.Receive, cur.Positions);
             }
 
             // Living shares (excl. winner) → pay (M - B) each
@@ -77,14 +83,14 @@ namespace AppQLHui.Services
             {
                 EnsurePlayer(s);
                 var cur = playerMap[s.PlayerId];
-                playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount + 1, cur.DeadCount, cur.Pay + (tontine.BaseAmount - bidAmount), cur.Receive);
+                playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount + 1, cur.DeadCount, cur.Pay + (tontine.BaseAmount - bidAmount), cur.Receive, cur.Positions);
             }
 
             // Winner receives totalReceived, but still pays for their OTHER shares
-            // (winner's own winning share doesn't pay)
+            // (winner's own winning share doesn't pay in THIS draw)
             EnsurePlayer(winningShare);
             var winner = playerMap[winningShare.PlayerId];
-            playerMap[winningShare.PlayerId] = (winner.Name, winner.Phone, winner.LivingCount, winner.DeadCount, winner.Pay, winner.Receive + totalReceived);
+            playerMap[winningShare.PlayerId] = (winner.Name, winner.Phone, winner.LivingCount, winner.DeadCount, winner.Pay, winner.Receive + totalReceived, winner.Positions);
 
             // Build result list with NetTotal = Receive - Pay
             var result = playerMap.Select(kv => new PlayerTransactionDto

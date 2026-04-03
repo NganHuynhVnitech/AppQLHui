@@ -1,55 +1,132 @@
 @model AppQLHui.Models.Tontine
 @{
-    ViewData["Title"] = "Tạo dây hụi";
+    ViewData["Title"] = "Thêm Dây Hụi";
 }
 
-<div class="row justify-content-center">
-<div class="col-md-7">
-<div class="card">
-    <div class="card-header fw-bold">📋 Tạo dây hụi mới</div>
-    <div class="card-body">
-        <form asp-action="Create" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <label asp-for="Name" class="form-label fw-semibold"></label>
-                    <input asp-for="Name" class="form-control" placeholder="VD: Ngày 100 D2" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="Type" class="form-label fw-semibold"></label>
-                    <select asp-for="Type" class="form-select"
-                            asp-items="Html.GetEnumSelectList<AppQLHui.Models.TontineType>()"></select>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="BaseAmount" class="form-label fw-semibold">Mệnh giá (M)</label>
-                    <input asp-for="BaseAmount" class="form-control" type="number" min="0" placeholder="100000" />
-                    <span asp-validation-for="BaseAmount" class="text-danger"></span>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="TotalShares" class="form-label fw-semibold">Số phần (N)</label>
-                    <input asp-for="TotalShares" class="form-control" type="number" min="2" placeholder="10" />
-                    <span asp-validation-for="TotalShares" class="text-danger"></span>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="CommissionFee" class="form-label fw-semibold">Tiền thảo (F)</label>
-                    <input asp-for="CommissionFee" class="form-control" type="number" min="0" placeholder="50000" />
-                    <span asp-validation-for="CommissionFee" class="text-danger"></span>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="FeeType" class="form-label fw-semibold">Cách thu thảo</label>
-                    <select asp-for="FeeType" class="form-select"
-                            asp-items="@(new SelectList(new[]{ new{V="Before",T="Thảo thu trước"}, new{V="After",T="Thảo thu sau"} }, "V", "T"))"></select>
-                </div>
+<div class="animate-fade-in row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-800 mb-0">🆕 Tạo Dây Hụi Mới</h2>
+                <p class="text-secondary">Thiết lập thông số cơ bản cho chu kỳ hụi mới</p>
             </div>
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-success">💾 Tạo & Phân chia phần</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Huỷ</a>
+            <a asp-action="Index" class="btn btn-light rounded-pill px-4 shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+
+        <div class="card shadow-lg border-0" style="border-radius: 24px;">
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Create" method="post" id="tontineCreateForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm" style="display:none"></div>
+                    
+                    <div class="row g-4">
+                        <!-- Tên dây -->
+                        <div class="col-md-8">
+                            <label asp-for="Name" class="form-label fw-bold text-secondary small text-uppercase">Tên dây hụi (Mô tả)</label>
+                            <input asp-for="Name" class="form-control form-control-lg border-0 bg-light px-3" 
+                                   placeholder="VD: Ngày 1 triệu - 10 phần" style="font-weight: 600;" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Loại hụi -->
+                        <div class="col-md-4">
+                            <label asp-for="Type" class="form-label fw-bold text-secondary small text-uppercase">Loại kỳ khui</label>
+                            <select asp-for="Type" class="form-select form-select-lg border-0 bg-light px-3" style="font-weight: 600;">
+                                <option value="Day">Hàng Ngày</option>
+                                <option value="Week">Hàng Tuần</option>
+                                <option value="Month">Hàng Tháng</option>
+                            </select>
+                        </div>
+
+                        <!-- Mệnh giá -->
+                        <div class="col-md-4">
+                            <label asp-for="BaseAmount" class="form-label fw-bold text-secondary small text-uppercase">Mệnh giá (M)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-success">đ</span>
+                                <input asp-for="BaseAmount" class="form-control border-0 px-3" type="number" 
+                                       placeholder="1,000,000" style="font-weight: 700;" />
+                            </div>
+                            <span asp-validation-for="BaseAmount" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Số phần -->
+                        <div class="col-md-4">
+                            <label asp-for="TotalShares" class="form-label fw-bold text-secondary small text-uppercase">Số phần (N)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-primary">#</span>
+                                <input asp-for="TotalShares" class="form-control border-0 px-3" type="number" 
+                                       placeholder="12" style="font-weight: 700;" />
+                            </div>
+                            <span asp-validation-for="TotalShares" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Tiền thảo -->
+                        <div class="col-md-4">
+                            <label asp-for="CommissionFee" class="form-label fw-bold text-secondary small text-uppercase">Tiền thảo (F)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-danger">đ</span>
+                                <input asp-for="CommissionFee" class="form-control border-0 px-3" type="number" 
+                                       placeholder="100,000" style="font-weight: 700;" />
+                            </div>
+                            <span asp-validation-for="CommissionFee" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Cách thu thảo -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-secondary small text-uppercase mb-3">Cách thức thu tiền thảo</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check custom-radio-card p-3 rounded-3 border h-100 cursor-pointer">
+                                        <input class="form-check-input d-none" type="radio" name="FeeType" id="feeBefore" value="Before">
+                                        <label class="form-check-label w-100 cursor-pointer" for="feeBefore">
+                                            <div class="fw-bold fs-6">Thảo thu trước</div>
+                                            <div class="small text-muted">Trừ trực tiếp vào tiền hốt của người trúng ngay lúc giao.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check custom-radio-card p-3 rounded-3 border h-100 cursor-pointer shadow-sm">
+                                        <input class="form-check-input d-none" type="radio" name="FeeType" id="feeAfter" value="After" checked>
+                                        <label class="form-check-label w-100 cursor-pointer" for="feeAfter">
+                                            <div class="fw-bold fs-6">Thảo thu sau</div>
+                                            <div class="small text-muted">Thu sau khi đã giao đủ hụi. (Phổ biến hơn)</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 text-center">
+                        <button type="submit" class="btn btn-lg btn-success rounded-pill px-5 py-3 shadow fw-800">
+                            TIẾP TỤC: PHÂN CHIA PHẦN HỤI <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 </div>
-</div>
-</div>
+
+<style>
+    .custom-radio-card { transition: all 0.2s; background: #f8fafc; }
+    .custom-radio-card:hover { border-color: var(--primary); background: #f1f5f9; }
+    .custom-radio-card input:checked + label { color: var(--primary); }
+    .custom-radio-card:has(input:checked) { border-color: var(--primary); background: #eff6ff; border-width: 2px; }
+    .fw-800 { font-weight: 800; }
+    .cursor-pointer { cursor: pointer; }
+</style>
+
+@section Scripts { 
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        document.querySelectorAll('.custom-radio-card').forEach(card => {
+            card.addEventListener('click', () => {
+                card.querySelector('input').checked = true;
+            });
+        });
+    </script>
+}
 
 @section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

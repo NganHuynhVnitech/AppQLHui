@@ -97,15 +97,25 @@ namespace AppQLHui.Services
                 .Where(d => d.DrawDate.Date == now.Date)
                 .ToListAsync();
 
+            int totalPlayers = await _db.Players.CountAsync();
+            decimal totalFees = await _db.Draws.SumAsync(d => d.CollectedFee);
+            
             // Dây hụi đến hạn khui hôm nay (Running + chưa có draw hôm nay)
             var dueTodayTontines = await _db.Tontines
                 .Where(t => t.Status == TontineStatus.Running)
                 .ToListAsync();
 
+            decimal activeCapital = await _db.Tontines
+                .Where(t => t.Status == TontineStatus.Running)
+                .SumAsync(t => t.BaseAmount * t.TotalShares);
+
             return new DashboardStatsDto
             {
                 RunningTontineCount = runningCount,
                 MonthlyFeesCollected = monthlyFees,
+                TotalFeesCollected = totalFees,
+                ActiveTontineCapital = activeCapital,
+                TotalPlayers = totalPlayers,
                 TodayDraws = todayDraws,
                 DueTodayTontines = dueTodayTontines
             };
@@ -116,6 +126,9 @@ namespace AppQLHui.Services
     {
         public int RunningTontineCount { get; set; }
         public decimal MonthlyFeesCollected { get; set; }
+        public decimal TotalFeesCollected { get; set; }
+        public decimal ActiveTontineCapital { get; set; }
+        public int TotalPlayers { get; set; }
         public List<Draw> TodayDraws { get; set; } = new();
         public List<Tontine> DueTodayTontines { get; set; } = new();
     }

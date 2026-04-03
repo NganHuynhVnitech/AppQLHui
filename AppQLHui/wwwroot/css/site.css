@@ -1,22 +1,169 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+:root {
+  --primary: #0f172a;       /* Deep Slate - Professional & Stable */
+  --secondary: #64748b;     /* Muted blue-grey */
+  --success: #10b981;       /* Emerald - Positive Flow */
+  --warning: #f59e0b;       /* Amber - Attention */
+  --danger: #ef4444;        /* Rose - Risk */
+  --info: #3b82f6;          /* Bright Blue */
+  --bg-app: #f1f5f9;        /* Light slate background */
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --radius: 12px;
 }
 
 body {
+  background-color: var(--bg-app);
+  color: var(--primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
   margin-bottom: 60px;
+}
+
+/* Premium Card Styles */
+.card {
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+  background-color: white;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Sidebar / Nav Enhancements */
+.navbar {
+  background-color: white !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  padding: 1rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.navbar-brand {
+  font-weight: 800;
+  color: var(--primary) !important;
+  letter-spacing: -0.5px;
+  font-size: 1.4rem;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: #1e293b;
+  transform: translateY(-1px);
+}
+
+.btn-success { background-color: var(--success); border-color: var(--success); }
+.btn-warning { background-color: var(--warning); border-color: var(--warning); color: white; }
+
+/* Gradient Buttons */
+.btn-gradient-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+}
+
+.btn-gradient-success:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Form Controls */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #ffffff;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--info);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Custom Select in Registration */
+.custom-select-premium {
+  font-weight: 500;
+  color: var(--primary);
+}
+
+/* Badges */
+.badge {
+  padding: 0.5em 0.8em;
+  font-weight: 600;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+/* Stat Cards */
+.stat-card-premium {
+  border-left: 5px solid var(--info);
+  padding: 1.5rem;
+}
+
+.stat-card-premium.success { border-left-color: var(--success); }
+.stat-card-premium.warning { border-left-color: var(--warning); }
+.stat-card-premium.danger { border-left-color: var(--danger); }
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.stat-label {
+  color: var(--secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+/* Panel Layouts */
+.draw-panel {
+  min-height: 500px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Typography Helpers */
+.text-positive { color: var(--success); font-weight: 700; }
+.text-negative { color: var(--danger); font-weight: 700; }
+
+/* Grid for registration */
+.share-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
 }

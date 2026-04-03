@@ -11,6 +11,9 @@ namespace AppQLHui.Models
         public int TontineId { get; set; }
         public Tontine Tontine { get; set; } = null!;
 
+        [Display(Name = "Số thứ tự")]
+        public int Position { get; set; }
+
         public int PlayerId { get; set; }
         public Player Player { get; set; } = null!;
 

@@ -71,25 +71,32 @@ namespace AppQLHui.Services
             else if (tontine.Status == TontineStatus.Draft)
                 tontine.Status = TontineStatus.Running;
 
+            // Cập nhật tổng thảo thực tế thu của dây hụi (Total fees collected)
+            tontine.TotalFeesCollected += draw.CollectedFee;
+
             await _db.SaveChangesAsync();
             return draw;
         }
 
-        /// <summary>Khởi tạo N phần hụi cho một dây hụi vừa được tạo</summary>
-        public async Task GenerateSharesAsync(int tontineId, int[] playerIds)
+        /// <summary>Khởi tạo N phần hụi cho một dây hụi với vị trí cụ thể (Số thứ tự)</summary>
+        public async Task GenerateSharesAsync(int tontineId, Dictionary<int, int> positionPlayerMap)
         {
             var tontine = await _db.Tontines.FindAsync(tontineId)
                 ?? throw new InvalidOperationException("Không tìm thấy dây hụi.");
 
-            if (playerIds.Length != tontine.TotalShares)
-                throw new InvalidOperationException($"Số người chơi ({playerIds.Length}) phải đúng bằng tổng số phần ({tontine.TotalShares}).");
+            if (positionPlayerMap.Count != tontine.TotalShares)
+                throw new InvalidOperationException($"Số lượng phần hụi ({positionPlayerMap.Count}) phải đúng bằng tổng số phần ({tontine.TotalShares}).");
 
-            foreach (var pid in playerIds)
+            foreach (var kvp in positionPlayerMap)
             {
+                var position = kvp.Key;
+                var playerId = kvp.Value;
+
                 _db.TontineShares.Add(new TontineShare
                 {
                     TontineId = tontineId,
-                    PlayerId = pid,
+                    PlayerId = playerId,
+                    Position = position,
                     Status = ShareStatus.Living
                 });
             }

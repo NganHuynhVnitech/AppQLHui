@@ -38,6 +38,10 @@ namespace AppQLHui.Models
         public TontineStatus Status { get; set; } = TontineStatus.Draft;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        
+        [Column(TypeName = "decimal(18,0)")]
+        [Display(Name = "Tổng thảo thực thu")]
+        public decimal TotalFeesCollected { get; set; }
 
         // Navigation
         public ICollection<TontineShare> Shares { get; set; } = new List<TontineShare>();
