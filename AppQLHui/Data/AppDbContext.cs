@@ -7,11 +7,11 @@ namespace AppQLHui.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<Player> Players { get; set; }
-        public DbSet<Tontine> Tontines { get; set; }
-        public DbSet<TontineShare> TontineShares { get; set; }
-        public DbSet<Draw> Draws { get; set; }
-        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Player> Players { get; set; } = null!;
+        public DbSet<Tontine> Tontines { get; set; } = null!;
+        public DbSet<TontineShare> TontineShares { get; set; } = null!;
+        public DbSet<Draw> Draws { get; set; } = null!;
+        public DbSet<Transaction> Transactions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
