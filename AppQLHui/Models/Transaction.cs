@@ -22,7 +22,7 @@ namespace AppQLHui.Models
         public decimal AmountReceive { get; set; }
 
         /// <summary>Số tiền thực nhận/đóng sau khi bù trừ. Dương = nhận, Âm = phải đóng</summary>
-        [Column(TypeName = "decimal(18,0)")]
+        [Column("NetAmount", TypeName = "decimal(18,0)")]
         [Display(Name = "Thực nhận/đóng (sau bù trừ)")]
         public decimal NetTotal { get; set; }
 
