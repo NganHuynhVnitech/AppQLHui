@@ -30,6 +30,14 @@ namespace AppQLHui.Models
         [Display(Name = "Tiền thảo thực tế thu")]
         public decimal CollectedFee { get; set; }
 
+        [Column(TypeName = "decimal(18,0)")]
+        [Display(Name = "Trừ nợ cũ")]
+        public decimal OldDebtDeduction { get; set; }
+
+        [Column(TypeName = "decimal(18,0)")]
+        [Display(Name = "Thực giao")]
+        public decimal ActualReceived { get; set; }
+
         // Navigation
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 

@@ -28,5 +28,9 @@ namespace AppQLHui.Models
 
         [Display(Name = "Đã thanh toán")]
         public bool IsSettled { get; set; } = false;
+
+        [Column(TypeName = "decimal(18,0)")]
+        [Display(Name = "Đã thu (Thanh toán từng phần)")]
+        public decimal PaidAmount { get; set; } = 0;
     }
 }

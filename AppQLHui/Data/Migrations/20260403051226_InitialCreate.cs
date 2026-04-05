@@ -15,12 +15,12 @@ namespace AppQLHui.Data.Migrations
                 name: "Players",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    Phone = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
-                    ZaloName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    ZaloName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,16 +31,17 @@ namespace AppQLHui.Data.Migrations
                 name: "Tontines",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 150, nullable: false),
-                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
                     BaseAmount = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
-                    TotalShares = table.Column<int>(type: "INTEGER", nullable: false),
+                    TotalShares = table.Column<int>(type: "int", nullable: false),
                     CommissionFee = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
-                    FeeType = table.Column<int>(type: "INTEGER", nullable: false),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    FeeType = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    TotalFeesCollected = table.Column<decimal>(type: "decimal(18,0)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -51,12 +52,12 @@ namespace AppQLHui.Data.Migrations
                 name: "Draws",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    TontineId = table.Column<int>(type: "INTEGER", nullable: false),
-                    SequenceNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    DrawDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    WinningShareId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TontineId = table.Column<int>(type: "int", nullable: false),
+                    SequenceNumber = table.Column<int>(type: "int", nullable: false),
+                    DrawDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    WinningShareId = table.Column<int>(type: "int", nullable: true),
                     BidAmount = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
                     CollectedFee = table.Column<decimal>(type: "decimal(18,0)", nullable: false)
                 },
@@ -75,12 +76,13 @@ namespace AppQLHui.Data.Migrations
                 name: "TontineShares",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    TontineId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlayerId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    WonDrawId = table.Column<int>(type: "INTEGER", nullable: true)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TontineId = table.Column<int>(type: "int", nullable: false),
+                    Position = table.Column<int>(type: "int", nullable: false),
+                    PlayerId = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    WonDrawId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -102,21 +104,21 @@ namespace AppQLHui.Data.Migrations
                         column: x => x.TontineId,
                         principalTable: "Tontines",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Transactions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    DrawId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlayerId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DrawId = table.Column<int>(type: "int", nullable: false),
+                    PlayerId = table.Column<int>(type: "int", nullable: false),
                     AmountPay = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
                     AmountReceive = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
-                    NetTotal = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
-                    IsSettled = table.Column<bool>(type: "INTEGER", nullable: false)
+                    NetAmount = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
+                    IsSettled = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {

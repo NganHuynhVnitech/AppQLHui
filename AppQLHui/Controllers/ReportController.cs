@@ -1,11 +1,13 @@
 using AppQLHui.Data;
 using AppQLHui.Models;
 using AppQLHui.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppQLHui.Controllers
 {
+    [Authorize]
     public class ReportController : Controller
     {
         private readonly AppDbContext _db;
@@ -17,6 +19,12 @@ namespace AppQLHui.Controllers
             _reportService = reportService;
         }
 
+        private async Task<AppUser?> GetCurrentOwnerAsync()
+        {
+            if (_db.CurrentUserId == null) return null;
+            return await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == _db.CurrentUserId);
+        }
+
         /// <summary>Sổ hụi - báo cáo trạng thái Âm/Dương tất cả hụi viên</summary>
         public async Task<IActionResult> Index()
         {
@@ -24,20 +32,44 @@ namespace AppQLHui.Controllers
             return View(balances);
         }
 
-        /// <summary>Bill đóng hụi theo ngày - tổng hợp theo ngày cho từng hụi viên</summary>
+        /// <summary>Báo cáo gom hụi hàng ngày - Danh sách tất cả người chơi có giao dịch</summary>
+        public async Task<IActionResult> DailySettlement(DateTime? date)
+        {
+            date ??= DateTime.Today;
+            var settlement = await _reportService.GetDailySettlementAsync(date.Value);
+            ViewBag.Owner = await GetCurrentOwnerAsync();
+            return View(settlement);
+        }
+
+        /// <summary>Bill gom hụi chi tiết theo từng người chơi trong ngày</summary>
         public async Task<IActionResult> DailyBill(DateTime? date)
         {
             date ??= DateTime.Today;
-            ViewBag.Date = date.Value;
-
             var transactions = await _db.Transactions
                 .Include(t => t.Player)
                 .Include(t => t.Draw).ThenInclude(d => d.Tontine)
                 .Where(t => t.Draw.DrawDate.Date == date.Value.Date)
-                .OrderBy(t => t.Player.Name)
                 .ToListAsync();
 
+            ViewBag.Date = date.Value;
+            ViewBag.Owner = await GetCurrentOwnerAsync();
+            
             return View(transactions);
+        }
+
+        /// <summary>Bill hốt/đóng hụi tổng hợp cho một người chơi trong ngày (Consolidated Bill)</summary>
+        public async Task<IActionResult> IndividualSummary(int playerId, DateTime? date)
+        {
+            date ??= DateTime.Today;
+            var playerBill = await _reportService.GetPlayerConsolidatedBillAsync(playerId, date.Value);
+            if (playerBill == null) return NotFound();
+            
+            var player = await _db.Players.FindAsync(playerId);
+            ViewBag.Player = player;
+            ViewBag.Date = date.Value;
+            ViewBag.Owner = await GetCurrentOwnerAsync();
+
+            return View(playerBill);
         }
 
         /// <summary>Giấy giao hụi - bill cho người hốt một kỳ cụ thể</summary>
@@ -49,6 +81,7 @@ namespace AppQLHui.Controllers
                 .Include(d => d.Transactions).ThenInclude(t => t.Player)
                 .FirstOrDefaultAsync(d => d.Id == drawId);
             if (draw == null) return NotFound();
+            ViewBag.Owner = await GetCurrentOwnerAsync();
             return View(draw);
         }
 
@@ -65,6 +98,28 @@ namespace AppQLHui.Controllers
                 .OrderByDescending(t => t.Draw.DrawDate)
                 .ToListAsync();
             return View(transactions);
+        }
+
+        /// <summary>Danh sách người chưa đóng hụi nợ tiền chủ hụi (Sổ Công Nợ)</summary>
+        public async Task<IActionResult> UnpaidDebts()
+        {
+            var debts = await _reportService.GetUnpaidDebtsAsync();
+            return View(debts);
+        }
+
+        /// <summary>API: Chốt thanh toán tiền (Đã thu xong nợ của một giao dịch)</summary>
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleSettlement(int transactionId, decimal amount)
+        {
+            try
+            {
+                var result = await _reportService.SettleTransactionAsync(transactionId, amount);
+                return Json(new { success = result.success, message = result.message });
+            }
+            catch(Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

@@ -23,5 +23,7 @@ namespace AppQLHui.Models
         /// <summary>Kỳ draw mà phần này đã hốt (null nếu chưa hốt)</summary>
         public int? WonDrawId { get; set; }
         public Draw? WonDraw { get; set; }
+
+        public bool IsSettledEarly { get; set; } = false;
     }
 }

@@ -53,12 +53,22 @@ namespace AppQLHui.Services
             decimal totalFromDead = deadShares.Count * tontine.BaseAmount;
             decimal totalFromLiving = livingSharesExcludingWinner.Count * (tontine.BaseAmount - bidAmount);
             
-            // Professional Logic: Total Received = (Living - 1) * (Base - Bid) + (Dead * Base) - Thao
-            // (Note: Winner's current winning share is not part of totalFromLiving or totalFromDead here based on above logic)
-            decimal totalReceived = totalFromDead + totalFromLiving - tontine.CommissionFee;
+            // Professional Logic: Fee collected based on FeeType
+            // Before: only seq 1 pays. After: everyone pays.
+            decimal curCollectedFee = 0;
+            if (tontine.FeeType == FeeType.After)
+                curCollectedFee = tontine.CommissionFee;
+            else if (tontine.FeeType == FeeType.Before && nextSeq == 1)
+                curCollectedFee = tontine.CommissionFee;
+
+            decimal totalReceived = totalFromDead + totalFromLiving - curCollectedFee;
+
+            // Fetch Old Debts to deduct from Winner
+            decimal winnerOldDebt = await _db.Transactions
+                .Where(t => t.PlayerId == winningShare.PlayerId && !t.IsSettled && t.NetTotal < 0)
+                .SumAsync(t => Math.Abs(t.NetTotal) - t.PaidAmount);
 
             // Build per-player aggregation
-            // Key: PlayerId → (Name, Phone, LivingCount, DeadCount, Pay, Receive, Positions)
             var playerMap = new Dictionary<int, (string Name, string? Phone, int LivingCount, int DeadCount, decimal Pay, decimal Receive, List<int> Positions)>();
 
             void EnsurePlayer(TontineShare s)
@@ -70,15 +80,14 @@ namespace AppQLHui.Services
                     playerMap[s.PlayerId].Positions.Add(s.Position);
             }
 
-            // Dead shares → pay BaseAmount each
             foreach (var s in deadShares)
             {
                 EnsurePlayer(s);
                 var cur = playerMap[s.PlayerId];
-                playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount, cur.DeadCount + 1, cur.Pay + tontine.BaseAmount, cur.Receive, cur.Positions);
+                decimal amtToPay = s.IsSettledEarly ? 0m : tontine.BaseAmount;
+                playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount, cur.DeadCount + 1, cur.Pay + amtToPay, cur.Receive, cur.Positions);
             }
 
-            // Living shares (excl. winner) → pay (M - B) each
             foreach (var s in livingSharesExcludingWinner)
             {
                 EnsurePlayer(s);
@@ -86,13 +95,10 @@ namespace AppQLHui.Services
                 playerMap[s.PlayerId] = (cur.Name, cur.Phone, cur.LivingCount + 1, cur.DeadCount, cur.Pay + (tontine.BaseAmount - bidAmount), cur.Receive, cur.Positions);
             }
 
-            // Winner receives totalReceived, but still pays for their OTHER shares
-            // (winner's own winning share doesn't pay in THIS draw)
             EnsurePlayer(winningShare);
             var winner = playerMap[winningShare.PlayerId];
             playerMap[winningShare.PlayerId] = (winner.Name, winner.Phone, winner.LivingCount, winner.DeadCount, winner.Pay, winner.Receive + totalReceived, winner.Positions);
 
-            // Build result list with NetTotal = Receive - Pay
             var result = playerMap.Select(kv => new PlayerTransactionDto
             {
                 PlayerId = kv.Key,
@@ -103,6 +109,7 @@ namespace AppQLHui.Services
                 AmountPay = kv.Value.Pay,
                 AmountReceive = kv.Value.Receive,
                 NetTotal = kv.Value.Receive - kv.Value.Pay,
+                OldDebtDeduction = kv.Key == winningShare.PlayerId ? winnerOldDebt : 0,
                 IsWinner = kv.Key == winningShare.PlayerId
             }).OrderByDescending(x => x.IsWinner).ThenBy(x => x.PlayerName).ToList();
 
@@ -113,13 +120,16 @@ namespace AppQLHui.Services
                 SequenceNumber = nextSeq,
                 BaseAmount = tontine.BaseAmount,
                 BidAmount = bidAmount,
-                CommissionFee = tontine.CommissionFee,
+                CommissionFee = curCollectedFee,
                 WinningShareId = winningShareId,
                 WinnerPlayerId = winningShare.PlayerId,
                 WinnerPlayerName = winningShare.Player.Name,
+                CountLivingPortions = livingSharesExcludingWinner.Count,
+                CountDeadPortions = deadShares.Count,
                 TotalFromLiving = totalFromLiving,
                 TotalFromDead = totalFromDead,
                 TotalReceived = totalReceived,
+                OldDebtDeduction = winnerOldDebt,
                 PlayerTransactions = result
             };
         }

@@ -39,10 +39,42 @@ namespace AppQLHui.Services
                 DrawDate = drawDate,
                 WinningShareId = winningShareId,
                 BidAmount = bidAmount,
-                CollectedFee = tontine.CommissionFee
+                CollectedFee = preview.CommissionFee,
+                OldDebtDeduction = preview.OldDebtDeduction,
+                ActualReceived = preview.FinalReceived
             };
             _db.Draws.Add(draw);
             await _db.SaveChangesAsync(); // lấy draw.Id
+
+            var winningShare = tontine.Shares.First(s => s.Id == winningShareId);
+
+            // TỰ ĐỘNG GẠCH NỢ CŨ CHO WINNER (nếu có trừ nợ)
+            if (preview.OldDebtDeduction > 0)
+            {
+                var unpaidTxs = await _db.Transactions
+                    .Where(t => t.PlayerId == winningShare.PlayerId && !t.IsSettled && t.NetTotal < 0)
+                    .OrderBy(t => t.Draw.DrawDate)
+                    .ToListAsync();
+
+                decimal remainingToDeduct = preview.OldDebtDeduction;
+                foreach (var oldTx in unpaidTxs)
+                {
+                    if (remainingToDeduct <= 0) break;
+
+                    decimal debt = Math.Abs(oldTx.NetTotal) - oldTx.PaidAmount;
+                    if (remainingToDeduct >= debt)
+                    {
+                        oldTx.PaidAmount += debt;
+                        oldTx.IsSettled = true;
+                        remainingToDeduct -= debt;
+                    }
+                    else
+                    {
+                        oldTx.PaidAmount += remainingToDeduct;
+                        remainingToDeduct = 0;
+                    }
+                }
+            }
 
             // Tạo Transaction cho từng người chơi
             foreach (var pt in preview.PlayerTransactions)
@@ -60,7 +92,6 @@ namespace AppQLHui.Services
             }
 
             // Cập nhật phần trúng → Dead + gán WonDrawId
-            var winningShare = tontine.Shares.First(s => s.Id == winningShareId);
             winningShare.Status = ShareStatus.Dead;
             winningShare.WonDrawId = draw.Id;
 

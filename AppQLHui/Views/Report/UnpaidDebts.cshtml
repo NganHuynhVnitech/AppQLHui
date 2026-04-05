@@ -1,0 +1,172 @@
+@model List<AppQLHui.Services.UnpaidTontineDto>
+@{
+    ViewData["Title"] = "Sổ Công Nợ (Chưa Đóng Hụi)";
+    decimal grandTotal = Model.Sum(t => t.TotalUnpaidAmount);
+    int totalUnpaidPlayers = Model.Sum(t => t.UnpaidPlayers.Count);
+}
+
+@Html.AntiForgeryToken()
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-800 mb-0">📕 Sổ Nợ Chưa Thu</h2>
+            <p class="text-secondary">Theo dõi và gạch nợ hụi viên chưa đóng tiền</p>
+        </div>
+        <div class="text-end">
+            <div class="text-muted small fw-bold">Tổng tiền đang ghim</div>
+            <div class="fs-3 fw-800 text-danger">@Math.Round(grandTotal).ToString("N0") ₫</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-5 text-center text-muted d-flex flex-column align-items-center">
+                <i class="bi bi-box2-heart font-primary mb-3" style="font-size: 4rem; opacity: 0.5;"></i>
+                <h4 class="fw-bold text-success mb-0">Tuyệt vời!</h4>
+                <p>Không có hụi viên nào nợ tiền kỳ khui.</p>
+            </div>
+        </div>
+        return;
+    }
+
+    <div class="row g-4">
+        @foreach (var tontine in Model)
+        {
+            <div class="col-12" id="tontine-card-@tontine.TontineId">
+                <div class="card shadow-sm border-0" style="border-radius: 16px;">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center" style="border-radius: 16px 16px 0 0;">
+                        <h5 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-bookmark-fill me-2"></i>@tontine.TontineName
+                        </h5>
+                        <div class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">
+                            Thuộc @tontine.UnpaidPlayers.Count người • Tổng: <span id="tontine-total-@tontine.TontineId">@Math.Round(tontine.TotalUnpaidAmount).ToString("N0")</span> đ
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                    <tr>
+                                        <th class="ps-4 py-3">Hụi viên</th>
+                                        <th>Kỳ trống</th>
+                                        <th class="text-end text-muted">Tổng nợ</th>
+                                        <th class="text-end">Cần đóng</th>
+                                        <th class="text-end pe-4" style="width: 15%;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var player in tontine.UnpaidPlayers)
+                                    {
+                                        @foreach (var tx in player.Transactions)
+                                        {
+                                            <tr id="tx-row-@tx.TransactionId" class="align-middle">
+                                                <td class="ps-4 fw-bold text-dark">
+                                                    <i class="bi bi-person-circle text-muted me-2"></i>@player.PlayerName
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-primary border border-primary-subtle px-3 py-2 shadow-sm" style="font-size: 0.85rem;">
+                                                        Kỳ @tx.SequenceNumber <span class="fw-normal opacity-75 ms-1">(@tx.DrawDate.ToString("dd/MM"))</span>
+                                                    </span>
+                                                </td>
+                                                <td class="text-end text-muted fw-bold">
+                                                    @if (tx.PaidAmount > 0)
+                                                    {
+                                                        <span class="small d-block text-decoration-line-through">@Math.Round(tx.TotalDebtAmount).ToString("N0")đ</span>
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1 mt-1">Đã góp @Math.Round(tx.PaidAmount).ToString("N0")đ</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@Math.Round(tx.TotalDebtAmount).ToString("N0") đ</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end fw-900 text-danger" style="font-size: 1.1rem;" id="tx-remain-@tx.TransactionId">
+                                                    @Math.Round(tx.RemainingAmount).ToString("N0") đ
+                                                </td>
+                                                <td class="text-end pe-4">
+                                                    <button class="btn btn-sm btn-outline-success fw-bold rounded-pill shadow-sm px-3" onclick="promptSettle(@tx.TransactionId, @tx.RemainingAmount, '@player.PlayerName', @tx.SequenceNumber)">
+                                                        <i class="bi bi-cash-coin me-1"></i> Thu
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .fw-900 { font-weight: 900; }
+</style>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function promptSettle(txId, remainAmount, playerName, cycleNo) {
+            Swal.fire({
+                title: `Thu tiền: ${playerName}`,
+                html: `<div class="mb-3">Khoản nợ của <strong>Kỳ ${cycleNo}</strong></div>
+                       <p class="text-secondary small">Bạn có thể sửa số tiền nếu hụi viên nộp thiếu (thanh toán từng phần).</p>`,
+                input: 'number',
+                inputLabel: 'Số tiền thực thu (VNĐ)',
+                inputValue: remainAmount,
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '✅ Xác nhận thu',
+                cancelButtonText: 'Đóng',
+                inputValidator: (value) => {
+                    if (!value || value <= 0) {
+                        return 'Vui lòng nhập số tiền hợp lệ!';
+                    }
+                    if (value > remainAmount) {
+                        return 'Không thể đóng nhiều hơn số nợ còn lại!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processSettlement(txId, parseFloat(result.value));
+                }
+            });
+        }
+
+        function processSettlement(txId, amount) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch('/Report/ToggleSettlement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `transactionId=${txId}&amount=${amount}`
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success', 
+                        title: 'Đã thu tiền',
+                        text: res.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Lỗi', res.message, 'error');
+                }
+            })
+            .catch(err => {
+                Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+            });
+        }
+    </script>
+}

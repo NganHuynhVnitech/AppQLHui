@@ -13,9 +13,21 @@ namespace AppQLHui.DTOs
         public int WinningShareId { get; set; }
         public int WinnerPlayerId { get; set; }
         public string WinnerPlayerName { get; set; } = string.Empty;
+        
+        // Math breakdown for "Giấy giao hụi"
+        public int CountLivingPortions { get; set; }
+        public int CountDeadPortions { get; set; }
+        public decimal AmountPerLivingPortion => BaseAmount - BidAmount;
+        public decimal AmountPerDeadPortion => BaseAmount;
+        
         public decimal TotalFromLiving { get; set; }
         public decimal TotalFromDead { get; set; }
         public decimal TotalReceived { get; set; }
+
+        // Professional Deductions
+        public decimal OldDebtDeduction { get; set; }
+        public decimal FinalReceived => TotalReceived - OldDebtDeduction;
+
         public List<PlayerTransactionDto> PlayerTransactions { get; set; } = new();
     }
 
@@ -40,6 +52,9 @@ namespace AppQLHui.DTOs
         /// <summary>Số tiền thực nhận/đóng sau khi bù trừ (+ = nhận, - = phải đóng)</summary>
         public decimal NetTotal { get; set; }
 
+        public decimal OldDebtDeduction { get; set; }
+        public decimal FinalTotal => NetTotal - OldDebtDeduction;
+
         public bool IsWinner { get; set; }
     }
 
@@ -48,6 +63,9 @@ namespace AppQLHui.DTOs
         public int PlayerId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? BankName { get; set; }
+        public string? BankAccountNumber { get; set; }
+        public string? BankAccountName { get; set; }
 
         /// <summary>Tổng tiền hụi sống (chưa hốt)</summary>
         public decimal TotalLivingAmount { get; set; }
@@ -60,5 +78,31 @@ namespace AppQLHui.DTOs
 
         /// <summary>Tiền Âm/Dương = Tổng hụi sống - Tổng hụi chết. Dương = đang nợ, Âm = đã thu về nhiều hơn</summary>
         public decimal NetBalance { get; set; }
+    }
+
+    public class DailySettlementDto
+    {
+        public DateTime Date { get; set; }
+        public List<PlayerDailyTotalDto> PlayerTotals { get; set; } = new();
+        public decimal GrandTotalCollect { get; set; }
+        public decimal GrandTotalPayout { get; set; }
+    }
+
+    public class PlayerDailyTotalDto
+    {
+        public int PlayerId { get; set; }
+        public string PlayerName { get; set; } = string.Empty;
+        public decimal TotalToPay { get; set; }
+        public decimal TotalToReceive { get; set; }
+        public decimal NetBalance => TotalToReceive - TotalToPay;
+        public List<TransactionDetailDto> Details { get; set; } = new();
+    }
+
+    public class TransactionDetailDto
+    {
+        public string TontineName { get; set; } = string.Empty;
+        public int SequenceNumber { get; set; }
+        public decimal Amount { get; set; }
+        public string Type { get; set; } = string.Empty; // "Pay" or "Receive"
     }
 }

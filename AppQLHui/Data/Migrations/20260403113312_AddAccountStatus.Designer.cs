@@ -4,6 +4,7 @@ using AppQLHui.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AppQLHui.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403113312_AddAccountStatus")]
+    partial class AddAccountStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,18 +32,6 @@ namespace AppQLHui.Data.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BankAccountName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("BankAccountNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("BankName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -81,9 +72,6 @@ namespace AppQLHui.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("ActualReceived")
-                        .HasColumnType("decimal(18,0)");
-
                     b.Property<decimal>("BidAmount")
                         .HasColumnType("decimal(18,0)");
 
@@ -92,9 +80,6 @@ namespace AppQLHui.Data.Migrations
 
                     b.Property<DateTime>("DrawDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("OldDebtDeduction")
-                        .HasColumnType("decimal(18,0)");
 
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
@@ -142,10 +127,6 @@ namespace AppQLHui.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<int>("OwnerId")
                         .HasColumnType("int");
 
@@ -181,13 +162,9 @@ namespace AppQLHui.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CycleNotes")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("CycleType")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("FeeType")
                         .HasColumnType("int");

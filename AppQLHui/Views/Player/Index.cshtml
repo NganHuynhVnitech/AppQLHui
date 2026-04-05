@@ -34,7 +34,21 @@
                                         <div class="fw-bold fs-6">@p.Name</div>
                                     </div>
                                 </td>
-                                <td><i class="bi bi-telephone text-secondary me-2"></i>@p.Phone</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(p.Phone))
+                                    {
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span>@p.Phone</span>
+                                            <button onclick="copyAndOpenZalo('@p.Phone')" class="btn btn-sm btn-soft-primary p-1 border-0" title="Copy & Mở Zalo">
+                                                <i class="bi bi-chat-dots text-primary"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">-</span>
+                                    }
+                                </td>
                                 <td>
                                     @if(!string.IsNullOrEmpty(p.ZaloName)) {
                                         <span class="badge bg-info-subtle text-info border border-info-subtle">
@@ -78,4 +92,6 @@
     }
     .bg-info-subtle { background-color: #e0f2fe; }
     .border-info-subtle { border-color: #bae6fd !important; }
+    .btn-soft-primary { background-color: #eff6ff; color: #2563eb; transition: all 0.2s; }
+    .btn-soft-primary:hover { background-color: #dbeafe; transform: scale(1.1); }
 </style>

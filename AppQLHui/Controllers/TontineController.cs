@@ -1,11 +1,13 @@
 using AppQLHui.Data;
 using AppQLHui.Models;
 using AppQLHui.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppQLHui.Controllers
 {
+    [Authorize]
     public class TontineController : Controller
     {
         private readonly AppDbContext _db;
@@ -37,6 +39,7 @@ namespace AppQLHui.Controllers
             if (!ModelState.IsValid) return View(tontine);
             tontine.CreatedAt = DateTime.Now;
             tontine.Status = TontineStatus.Draft;
+            tontine.OwnerId = _db.CurrentUserId ?? 0;
             _db.Tontines.Add(tontine);
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã tạo dây hụi \"{tontine.Name}\"!";
@@ -97,7 +100,48 @@ namespace AppQLHui.Controllers
                 .Include(t => t.Draws).ThenInclude(d => d.WinningShare).ThenInclude(ws => ws!.Player)
                 .FirstOrDefaultAsync(t => t.Id == id);
             if (tontine == null) return NotFound();
+            
+            ViewBag.AllPlayers = await _db.Players.OrderBy(p => p.Name).ToListAsync();
             return View(tontine);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeSharePlayer(int shareId, int newPlayerId)
+        {
+            try
+            {
+                var share = await _db.TontineShares.FindAsync(shareId);
+                if (share == null) return Json(new { success = false, message = "Không tìm thấy phần hụi." });
+
+                share.PlayerId = newPlayerId;
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, message = "Đã đổi người chơi cho phần hụi này." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> SettleShareEarly(int shareId)
+        {
+            try
+            {
+                var share = await _db.TontineShares.FindAsync(shareId);
+                if (share == null) return Json(new { success = false, message = "Không tìm thấy phần hụi." });
+
+                if (share.Status != ShareStatus.Dead)
+                    return Json(new { success = false, message = "Chỉ có thể tất toán hụi chết." });
+
+                share.IsSettledEarly = true;
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, message = "Đã tất toán hụi chết sớm cho phần hụi này." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         public async Task<IActionResult> Edit(int id)

@@ -1,0 +1,170 @@
+@model AppQLHui.DTOs.PlayerDailyTotalDto
+@{
+    ViewData["Title"] = "Bill Đóng Hụi Cá Nhân";
+    var player = (AppQLHui.Models.Player)ViewBag.Player;
+    var date = (DateTime)ViewBag.Date;
+    
+    var owner = ViewBag.Owner as AppUser;
+    
+    // VietQR URL (Pay to Owner)
+    var qrUrl = "";
+    if (owner != null && !string.IsNullOrEmpty(owner.BankName) && !string.IsNullOrEmpty(owner.BankAccountNumber)) 
+    {
+        var amount = Math.Abs(Model.NetBalance);
+        var info = $"HUI {player.Name} NGAY {date:ddMMyy}";
+        qrUrl = $"https://img.vietqr.io/image/{owner.BankName}-{owner.BankAccountNumber}-compact2.png?amount={amount}&addInfo={Uri.EscapeDataString(info)}&accountName={Uri.EscapeDataString(owner.BankAccountName ?? "")}";
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h4 class="fw-800 mb-0">📄 Bill Đóng Hụi</h4>
+        <p class="text-secondary small mb-0">Hội viên: @player.Name | Ngày: @date.ToString("dd/MM/yyyy")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 shadow-sm">
+            <i class="bi bi-printer me-1"></i> In Hóa Đơn
+        </button>
+        <a asp-action="DailySettlement" asp-route-date="@date.ToString("yyyy-MM-dd")" class="btn btn-light rounded-pill px-3">Quay lại</a>
+    </div>
+</div>
+
+<div class="bill-container mx-auto bg-white p-5 shadow-sm border" style="max-width: 700px; border-radius: 12px; font-family: 'Inter', sans-serif;">
+    <!-- HEADER -->
+    <div class="text-center mb-5 border-bottom pb-4">
+        <div class="fs-4 fw-bold mb-1 text-primary">CHỦ HỤI: HỆ THỐNG QL HỤI PRO</div>
+        <div class="small tracking-widest text-secondary font-monospace">Hợp đồng điện tử xác nhận giao dịch ngày @date.ToString("dd/MM/yyyy")</div>
+    </div>
+
+    <!-- PLAYER HEADER (Ref: Image 3) -->
+    <div class="p-4 bg-light rounded-4 mb-5 border d-flex justify-content-between align-items-center">
+        <div>
+            <div class="small fw-bold text-uppercase text-secondary mb-1">HỘI VIÊN</div>
+            <h2 class="fw-800 text-dark mb-0">@player.Name</h2>
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <div class="badge bg-primary rounded-pill px-3">@player.Phone</div>
+                @if (!string.IsNullOrEmpty(player.Phone))
+                {
+                    <button onclick="copyAndOpenZalo('@player.Phone')" class="btn btn-sm btn-outline-primary border-0 p-0 no-print" title="Copy & Mở Zalo">
+                        <i class="bi bi-chat-dots-fill text-primary shadow-none"></i>
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="text-end">
+            <div class="small fw-bold text-uppercase text-secondary mb-1">TRẠNG THÁI TỔNG</div>
+            @if (Model.NetBalance >= 0)
+            {
+                <span class="fs-4 fw-800 text-success">+@Model.NetBalance.ToString("N0") <small>đ</small></span>
+                <div class="small text-success fw-bold">CHỦ HỤI GIAO (BẠN NHẬN)</div>
+            }
+            else
+            {
+                <span class="fs-4 fw-800 text-danger">@Model.NetBalance.ToString("N0") <small>đ</small></span>
+                <div class="small text-danger fw-bold">BẠN ĐÓNG (CHỦ THU)</div>
+            }
+        </div>
+    </div>
+
+    <!-- DETAIL GRID -->
+    <h6 class="text-uppercase fw-bold text-secondary small mb-3 border-bottom pb-2">CHI TIẾT CÁC DÂY HỤI KỲ NÀY</h6>
+    <div class="table-responsive mb-5">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-3 py-3 font-semibold">Tên dây & Kỳ</th>
+                    <th class="text-end">Đóng</th>
+                    <th class="text-end pe-3">Hốt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var detail in Model.Details)
+                {
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold">@detail.TontineName</div>
+                            <div class="small text-muted">Kỳ khui số #@detail.SequenceNumber</div>
+                        </td>
+                        <td class="text-end">
+                            @if (detail.Type == "Pay")
+                            {
+                                <span class="fw-bold text-danger">-@Math.Abs(detail.Amount).ToString("N0")</span>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                        <td class="text-end pe-3">
+                            @if (detail.Type == "Receive")
+                            {
+                                <span class="fw-bold text-success">+@detail.Amount.ToString("N0")</span>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-secondary">
+                <tr class="fw-bold">
+                    <td class="ps-3 py-3">TỔNG CỘNG</td>
+                    <td class="text-end text-danger">@Model.TotalToPay.ToString("N0")</td>
+                    <td class="text-end text-success pe-3">@Model.TotalToReceive.ToString("N0")</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- QR & SIGNATURE (Ref: Image 3) -->
+    <div class="row align-items-center">
+        <div class="col-7">
+            <h6 class="fw-bold mb-3 border-bottom pb-2">CHỮ KÝ XÁC NHẬN</h6>
+            <div class="row text-center pt-3">
+                <div class="col-6">
+                    <div class="small opacity-75 mb-5">Người giao</div>
+                    <div class="mt-5 fw-bold small border-top pt-2">XÁC NHẬN X</div>
+                </div>
+                <div class="col-6">
+                    <div class="small opacity-75 mb-5">Người nhận</div>
+                    <div class="mt-5 fw-bold small border-top pt-2">@player.Name</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-5 text-center">
+            @if (!string.IsNullOrEmpty(qrUrl))
+            {
+                <div class="p-3 border rounded-4 shadow-sm bg-white">
+                    <div class="small fw-bold text-primary mb-2">QUAY ĐỂ CHUYỂN KHOẢN</div>
+                    <img src="@qrUrl" class="img-fluid" style="max-height: 160px;" alt="VietQR" />
+                    <div class="small mt-2 font-monospace opacity-75">@player.BankName - @player.BankAccountNumber</div>
+                </div>
+            }
+            else
+            {
+                <div class="p-4 border border-dashed rounded-4 text-muted small">
+                    Chưa cấu hình tài khoản ngân hàng để tạo mã QR.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="mt-5 pt-4 text-center text-secondary small border-top" style="font-style: italic;">
+        Lưu ý: Mọi giao dịch đã được hệ thống ghi nhận tự động. Vui lòng kiểm tra kỹ trước khi rời quầy.
+    </div>
+</div>
+
+<style>
+    @@media print {
+        .no-print { display: none !important; }
+        .sidebar, .navbar { display: none !important; }
+        .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+        .bill-container { border: none !important; box-shadow: none !important; margin: 0 !important; max-width: none !important; width: 100% !important; }
+        body { background: white !important; }
+    }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .fw-800 { font-weight: 800; }
+</style>

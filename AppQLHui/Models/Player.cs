@@ -20,7 +20,27 @@ namespace AppQLHui.Models
         [Display(Name = "Tên Zalo")]
         public string? ZaloName { get; set; }
 
+        [MaxLength(50)]
+        [Display(Name = "Ngân hàng")]
+        public string? BankName { get; set; }
+
+        [MaxLength(50)]
+        [Display(Name = "Số tài khoản")]
+        public string? BankAccountNumber { get; set; }
+
+        [MaxLength(100)]
+        [Display(Name = "Chủ tài khoản")]
+        public string? BankAccountName { get; set; }
+
+        [MaxLength(255)]
+        [Display(Name = "Ghi chú")]
+        public string? Notes { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        // Ownership
+        public int OwnerId { get; set; }
+        public AppUser Owner { get; set; } = null!;
 
         // Navigation
         public ICollection<TontineShare> TontineShares { get; set; } = new List<TontineShare>();

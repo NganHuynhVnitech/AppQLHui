@@ -20,6 +20,13 @@ namespace AppQLHui.Models
         [Display(Name = "Loại hụi")]
         public TontineType Type { get; set; } = TontineType.Day;
 
+        [Display(Name = "Chu kỳ khui")]
+        [MaxLength(200)]
+        public string CycleType { get; set; } = "Hàng ngày";
+
+        [Display(Name = "Ghi chú chu kỳ")]
+        public string? CycleNotes { get; set; } // Ví dụ: "Thứ 2-4-6", "10h & 15h hàng ngày"
+
         [Column(TypeName = "decimal(18,0)")]
         [Display(Name = "Mệnh giá (M)")]
         public decimal BaseAmount { get; set; }
@@ -42,6 +49,10 @@ namespace AppQLHui.Models
         [Column(TypeName = "decimal(18,0)")]
         [Display(Name = "Tổng thảo thực thu")]
         public decimal TotalFeesCollected { get; set; }
+
+        // Ownership
+        public int OwnerId { get; set; }
+        public AppUser Owner { get; set; } = null!;
 
         // Navigation
         public ICollection<TontineShare> Shares { get; set; } = new List<TontineShare>();

@@ -29,14 +29,15 @@
                             <span asp-validation-for="Name" class="text-danger small"></span>
                         </div>
 
-                        <!-- Loại hụi -->
+                        <!-- Chu kỳ hụi -->
                         <div class="col-md-4">
-                            <label asp-for="Type" class="form-label fw-bold text-secondary small text-uppercase">Loại kỳ khui</label>
-                            <select asp-for="Type" class="form-select form-select-lg border-0 bg-light px-3" style="font-weight: 600;">
-                                <option value="Day">Hàng Ngày</option>
-                                <option value="Week">Hàng Tuần</option>
-                                <option value="Month">Hàng Tháng</option>
-                            </select>
+                            <label asp-for="CycleType" class="form-label fw-bold text-secondary small text-uppercase">Chu kỳ khui</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-primary"><i class="bi bi-calendar-range"></i></span>
+                                <input asp-for="CycleType" id="cycleTypeInput" class="form-control border-0 px-3 bg-white" 
+                                       readonly style="font-weight: 700; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#cycleModal" />
+                            </div>
+                            <span asp-validation-for="CycleType" class="text-danger small"></span>
                         </div>
 
                         <!-- Mệnh giá -->
@@ -109,6 +110,75 @@
     </div>
 </div>
 
+<!-- Modal Chu Kỳ Khui -->
+<div class="modal fade" id="cycleModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 12px; background: #f0f2f5;">
+            <div class="modal-header bg-primary text-white" style="border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title fw-bold">CÀI ĐẶT CHU KỲ KHUI</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-2">
+                    <!-- Column 1 (Red) -->
+                    <div class="col-md-3 cycle-group">
+                        <button type="button" class="btn btn-cycle btn-danger fw-bold text-white w-100 mb-2">Ngày</button>
+                        <button type="button" class="btn btn-cycle btn-danger fw-bold text-white w-100 mb-2">Tuần</button>
+                        <button type="button" class="btn btn-cycle btn-danger fw-bold text-white w-100 mb-2">Tháng</button>
+                        @for (int i = 2; i <= 8; i++) {
+                            <button type="button" class="btn btn-cycle btn-light text-danger fw-bold w-100 mb-2 border shadow-sm">@i Ngày</button>
+                        }
+                    </div>
+                    
+                    <!-- Column 2 (Dark Red text) -->
+                    <div class="col-md-3 cycle-group">
+                        @for (int i = 9; i <= 18; i++) {
+                            <button type="button" class="btn btn-cycle btn-light fw-bold w-100 mb-2 border shadow-sm" style="color: #8b0000;">@i Ngày</button>
+                        }
+                    </div>
+                    
+                    <!-- Column 3 (Black text) -->
+                    <div class="col-md-3 cycle-group">
+                        @for (int i = 19; i <= 28; i++) {
+                            <button type="button" class="btn btn-cycle btn-light text-dark fw-bold w-100 mb-2 border shadow-sm">@i Ngày</button>
+                        }
+                    </div>
+                    
+                    <!-- Column 4 (Special / Green / Purple) -->
+                    <div class="col-md-3 cycle-group">
+                        <button type="button" class="btn btn-cycle btn-light text-success fw-bold w-100 mb-2 border shadow-sm">Ngày khui 2 lần</button>
+                        <button type="button" class="btn btn-cycle btn-light text-success fw-bold w-100 mb-2 border shadow-sm">Ngày khui 3 lần</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 3,5,7</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 4,6, CN</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 2,6</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 4,7</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Tùy chọn Thứ...</button>
+                        <button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 mb-2 border shadow-sm">10 Ngày (3,13,23)</button>
+                        <button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 mb-2 border shadow-sm">14 Ngày (9,23)</button>
+                        <button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 mb-2 border shadow-sm">15 Ngày (8,23)</button>
+                    </div>
+                </div>
+
+                <!-- Months row -->
+                <div class="row g-2 mt-2">
+                    <div class="col-3"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">2 THÁNG</button></div>
+                    <div class="col-3"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">3 THÁNG</button></div>
+                    <div class="col-2"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">4 THÁNG</button></div>
+                    <div class="col-2"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">5 THÁNG</button></div>
+                    <div class="col-2"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">6 THÁNG</button></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light d-flex justify-content-between align-items-center" style="border-radius: 0 0 12px 12px;">
+                <div class="d-flex align-items-center gap-3 w-75">
+                    <span class="fw-bold text-nowrap">Tùy chọn ngày :</span>
+                    <input type="text" id="customDaysInput" class="form-control" placeholder="Ví dụ: 5,10,15,25,30">
+                </div>
+                <button type="button" class="btn btn-success fw-bold px-4" id="btnAcceptCustom">ĐỒNG Ý</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .custom-radio-card { transition: all 0.2s; background: #f8fafc; }
     .custom-radio-card:hover { border-color: var(--primary); background: #f1f5f9; }
@@ -126,7 +196,26 @@
                 card.querySelector('input').checked = true;
             });
         });
+
+        // Cycle Modal Logic
+        const cycleTypeInput = document.getElementById('cycleTypeInput');
+        const customDaysInput = document.getElementById('customDaysInput');
+        const cycleModal = new bootstrap.Modal(document.getElementById('cycleModal'));
+
+        // Handle predefined buttons
+        document.querySelectorAll('.btn-cycle').forEach(btn => {
+            btn.addEventListener('click', function() {
+                cycleTypeInput.value = this.innerText.trim();
+                cycleModal.hide();
+            });
+        });
+
+        // Handle Custom input
+        document.getElementById('btnAcceptCustom').addEventListener('click', function() {
+            if (customDaysInput.value.trim() !== "") {
+                cycleTypeInput.value = customDaysInput.value.trim();
+            }
+            cycleModal.hide();
+        });
     </script>
 }
-
-@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

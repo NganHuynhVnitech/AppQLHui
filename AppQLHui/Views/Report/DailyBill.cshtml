@@ -32,13 +32,13 @@ else
                             <th>Dây hụi</th><th>Kỳ</th>
                             <th class="text-end">Đóng</th>
                             <th class="text-end">Nhận</th>
-                            <th class="text-end">Net</th>
+                            <th class="text-end">Thực nhận</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var tx in grp)
                         {
-                            var nc = tx.NetTotal >= 0 ? "text-positive" : "text-negative";
+                            var nc = tx.NetTotal >= 0 ? "text-success" : "text-danger";
                             <tr>
                                 <td>@tx.Draw.Tontine.Name</td>
                                 <td>#@tx.Draw.SequenceNumber</td>
@@ -49,16 +49,37 @@ else
                         }
                     </tbody>
                     <tfoot class="fw-bold table-secondary">
+                        @{
+                            var totalNet = grp.Sum(t => t.NetTotal);
+                            var owner = ViewBag.Owner as AppUser;
+                        }
                         <tr>
-                            <td colspan="2">Tổng</td>
+                            <td colspan="2">Tổng cộng</td>
                             <td class="text-end">@grp.Sum(t => t.AmountPay).ToString("N0") đ</td>
                             <td class="text-end">@grp.Sum(t => t.AmountReceive).ToString("N0") đ</td>
-                            <td class="text-end @(grp.Sum(t=>t.NetTotal)>=0?"text-positive":"text-negative")">
-                                @(grp.Sum(t=>t.NetTotal) >= 0 ? "+" : "")@grp.Sum(t => t.NetTotal).ToString("N0") đ
+                            <td class="text-end @(totalNet >= 0 ? "text-success" : "text-danger")">
+                                @(totalNet >= 0 ? "+" : "")@totalNet.ToString("N0") đ
                             </td>
                         </tr>
                     </tfoot>
                 </table>
+
+                @if (totalNet < 0 && owner != null && !string.IsNullOrEmpty(owner.BankAccountNumber))
+                {
+                    <div class="p-3 bg-light border-top d-flex align-items-center justify-content-between">
+                        <div class="small">
+                            <div class="fw-bold text-uppercase mb-1">Thanh toán qua Ngân hàng:</div>
+                            <div>Ngân hàng: <strong>@owner.BankName</strong></div>
+                            <div>STK: <strong>@owner.BankAccountNumber</strong></div>
+                            <div>Chủ TK: <strong>@owner.BankAccountName</strong></div>
+                        </div>
+                        <div class="text-center">
+                            <img src="https://img.vietqr.io/image/@(owner.BankName)-@(owner.BankAccountNumber)-compact2.png?amount=@(Math.Abs(totalNet))&addInfo=@(Uri.EscapeDataString("Dong hui ngay " + date.ToString("dd/MM") + " " + grp.Key))&accountName=@(Uri.EscapeDataString(owner.BankAccountName ?? ""))" 
+                                 style="width: 120px; height: 120px;" class="border shadow-sm bg-white" alt="QR Thanh toán" />
+                            <div class="small mt-1 text-muted">Quét mã trả hụi</div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     }

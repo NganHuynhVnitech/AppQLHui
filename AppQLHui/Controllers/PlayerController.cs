@@ -1,10 +1,12 @@
 using AppQLHui.Data;
 using AppQLHui.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppQLHui.Controllers
 {
+    [Authorize]
     public class PlayerController : Controller
     {
         private readonly AppDbContext _db;
@@ -30,6 +32,8 @@ namespace AppQLHui.Controllers
         {
             if (!ModelState.IsValid) return View(player);
             player.CreatedAt = DateTime.Now;
+            player.OwnerId = _db.CurrentUserId ?? 0;
+            player.Notes = player.Notes; // Already in model
             _db.Players.Add(player);
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã thêm hụi viên \"{player.Name}\" thành công!";

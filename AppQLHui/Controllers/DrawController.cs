@@ -1,11 +1,13 @@
 using AppQLHui.Data;
 using AppQLHui.Models;
 using AppQLHui.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppQLHui.Controllers
 {
+    [Authorize]
     public class DrawController : Controller
     {
         private readonly AppDbContext _db;
@@ -137,6 +139,71 @@ namespace AppQLHui.Controllers
                 playerName = chosen.Player.Name,
                 playerId = chosen.PlayerId
             });
+        }
+
+        /// <summary>API: Xóa bỏ kỳ khui gần nhất</summary>
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteDraw(int drawId)
+        {
+            try
+            {
+                var draw = await _db.Draws.Include(d => d.Transactions).FirstOrDefaultAsync(d => d.Id == drawId);
+                if (draw == null) return Json(new { success = false, message = "Không tìm thấy kỳ khui." });
+
+                var latestSeq = await _db.Draws.Where(d => d.TontineId == draw.TontineId).MaxAsync(d => (int?)d.SequenceNumber) ?? 0;
+                if (draw.SequenceNumber != latestSeq)
+                {
+                    return Json(new { success = false, message = "Lỗi bảo mật: Bạn chỉ được phép xóa LẦN KHUI MỚI NHẤT để không làm hỏng dữ liệu dòng tiền." });
+                }
+
+                // 1. Phục hồi Share
+                var share = await _db.TontineShares.FindAsync(draw.WinningShareId);
+                if (share == null) return Json(new { success = false, message = "Lỗi: Không tìm thấy chân hụi đã hốt." });
+
+                share.WonDrawId = null;
+                share.Status = ShareStatus.Living;
+
+                // 2. PHỤC HỒI NỢ CŨ (Nếu draw này từng trừ nợ)
+                if (draw.OldDebtDeduction > 0)
+                {
+                    // Lấy lại các giao dịch cũ của người này mà đã được gạch nợ (IsSettled hoặc PaidAmount > 0)
+                    // Lưu ý: Việc khôi phục chính xác từng đồng nợ cũ rất phức tạp nếu người đó đóng thêm tiền sau đó.
+                    // Ở đây em sẽ thực hiện trừ ngược lại PaidAmount của các giao dịch chưa bị xóa.
+                    var winnerTransactions = await _db.Transactions
+                        .Where(t => t.PlayerId == share.PlayerId && t.Id != draw.Id)
+                        .OrderByDescending(t => t.Draw.DrawDate)
+                        .ToListAsync();
+
+                    decimal remainingToReverse = draw.OldDebtDeduction;
+                    foreach (var tx in winnerTransactions)
+                    {
+                        if (remainingToReverse <= 0) break;
+                        if (tx.PaidAmount >= remainingToReverse)
+                        {
+                            tx.PaidAmount -= remainingToReverse;
+                            tx.IsSettled = false;
+                            remainingToReverse = 0;
+                        }
+                        else
+                        {
+                            remainingToReverse -= tx.PaidAmount;
+                            tx.PaidAmount = 0;
+                            tx.IsSettled = false;
+                        }
+                    }
+                }
+
+                // 3. Xóa tất cả các giao dịch Transactions + Draw row
+                _db.Transactions.RemoveRange(draw.Transactions);
+                _db.Draws.Remove(draw);
+
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, message = "Đã xóa bỏ kỳ khui và hoàn trả công nợ thành công." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

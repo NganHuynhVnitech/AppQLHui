@@ -70,10 +70,20 @@
 
                         <!-- Bước 3: Người hốt -->
                         <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-bold text-secondary small text-uppercase mb-0">3. Chọn người hốt</label>
-                                <button class="btn btn-sm btn-outline-warning border-0 fw-bold" onclick="randomDraw(@selectedTontine.Id)">
-                                    🎲 Quay số ngẫu nhiên
+                            <label class="form-label fw-bold text-secondary small text-uppercase mb-2">3. Chọn người hốt</label>
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="form-label text-secondary small mb-1">Chọn người trúng trước:</label>
+                                    <select id="targetWinnerSelect" class="form-select border-0 shadow-sm font-monospace fw-bold text-primary">
+                                        <option value="">--- Ngẫu Nhiên ---</option>
+                                        @foreach (var s in livingShares)
+                                        {
+                                            <option value="@s.PlayerId">@s.Player.Name (VT: @s.Position)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <button class="btn btn-warning shadow-sm border-0 fw-bold rounded-pill px-4" onclick="randomDraw(@selectedTontine.Id)">
+                                    🎲 Quay vòng xoay
                                 </button>
                             </div>
                             <div class="share-grid-scroll p-2 bg-light rounded-3" style="max-height: 350px; overflow-y: auto;">
@@ -153,6 +163,20 @@
     </div>
 </div>
 
+<!-- Overlay Spinner Randomizer (Canvas Wheel) -->
+<div id="spinnerOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center d-none" style="background: rgba(0,0,0,0.85); z-index: 9999;">
+    <h2 class="text-warning fw-800 mb-4 animate-pulse" id="wheelTitle"><i class="bi bi-stars"></i> ĐANG QUAY SỐ <i class="bi bi-stars"></i></h2>
+    <div class="position-relative" style="width: 500px; height: 500px;">
+        <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 50px solid black; z-index: 10; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));"></div>
+        <canvas id="wheelCanvas" width="500" height="500" class="shadow-lg rounded-circle" style="border: 8px solid white;"></canvas>
+    </div>
+    <div id="spinnerResultMsg" class="h3 text-white fw-bold d-none mt-4 text-center">
+        <i class="bi bi-trophy-fill text-warning me-2 d-block display-4 mb-2"></i>
+        <span class="text-warning display-5 fw-800" id="winnerTextValue">???</span><br/>
+        ĐÃ TRÚNG HỤI KỲ NÀY!
+    </div>
+</div>
+
 <style>
     .share-item-premium { cursor: pointer; transition: all 0.2s; border: 2px solid transparent !important; }
     .share-item-premium:hover { transform: translateX(5px); background-color: #f8fafc; }
@@ -162,6 +186,13 @@
     }
     .fw-800 { font-weight: 800; }
     .cursor-pointer { cursor: pointer; }
+    
+    /* Animations for spinner */
+    @@keyframes pulse-fast { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
+    .animate-pulse { animation: pulse-fast 0.5s infinite; }
+    
+    @@keyframes bounce-winner { 0% { transform: scale(1); } 50% { transform: scale(1.2); color: var(--danger); } 100% { transform: scale(1); } }
+    .winner-bounce { animation: bounce-winner 0.8s ease-in-out; }
 </style>
 
 @section Scripts {
@@ -176,18 +207,200 @@
         selectedPlayerName = playerName;
     }
 
+    // --- CANVAS WHEEL LOGIC ---
+    let namesForWheel = [];
+    let sliceColors = ['#dc3545', '#198754', '#0d6efd', '#ffc107', '#fd7e14', '#6f42c1', '#20c997', '#e83e8c'];
+    let currentRotation = 0;
+    let wheelCtx = null;
+    let wheelResultData = null;
+
+    function initWheel() {
+        namesForWheel = Array.from(document.querySelectorAll('.share-item-premium .fw-bold.mb-0')).map(el => el.innerText);
+        const canvas = document.getElementById('wheelCanvas');
+        if (!canvas) return;
+        wheelCtx = canvas.getContext('2d');
+        drawWheel(0);
+    }
+
+    function drawWheel(angleOffset) {
+        if(!wheelCtx || namesForWheel.length === 0) return;
+        const cw = wheelCtx.canvas.width;
+        const ch = wheelCtx.canvas.height;
+        const cx = cw / 2;
+        const cy = ch / 2;
+        const radius = cx;
+        const arc = Math.PI * 2 / namesForWheel.length;
+
+        wheelCtx.clearRect(0, 0, cw, ch);
+
+        for (let i = 0; i < namesForWheel.length; i++) {
+            const startAngle = angleOffset + i * arc;
+            const endAngle = startAngle + arc;
+
+            wheelCtx.beginPath();
+            let colorIndex = i % sliceColors.length;
+            // Avoid same color touching at the end
+            if (i === namesForWheel.length - 1 && colorIndex === 0 && namesForWheel.length > 2) {
+                colorIndex = 1; 
+            }
+            wheelCtx.fillStyle = sliceColors[colorIndex];
+            
+            wheelCtx.moveTo(cx, cy);
+            wheelCtx.arc(cx, cy, radius, startAngle, endAngle);
+            wheelCtx.fill();
+            
+            // Draw slice separator lines
+            wheelCtx.lineWidth = 2;
+            wheelCtx.strokeStyle = 'white';
+            wheelCtx.stroke();
+
+            // Draw Text
+            wheelCtx.save();
+            wheelCtx.translate(cx, cy);
+            wheelCtx.rotate(startAngle + arc / 2);
+            wheelCtx.textAlign = 'right';
+            wheelCtx.textBaseline = 'middle';
+            wheelCtx.fillStyle = '#ffffff';
+            wheelCtx.font = 'bold 22px Inter, sans-serif';
+            
+            // Draw text and a little dot near the edge
+            wheelCtx.fillText(namesForWheel[i], radius - 25, 0);
+            
+            // Draw a tiny circle on the rim
+            wheelCtx.beginPath();
+            wheelCtx.arc(radius - 12, 0, 4, 0, Math.PI*2);
+            wheelCtx.fillStyle = 'rgba(255,255,255,0.5)';
+            wheelCtx.fill();
+
+            wheelCtx.restore();
+        }
+    }
+
     function randomDraw(tontineId) {
-        fetch(`/Draw/RandomDraw?tontineId=${tontineId}`)
+        initWheel(); // refresh names
+        if (namesForWheel.length === 0) {
+            Swal.fire('Lỗi', 'Không có hụi viên nào !', 'error');
+            return;
+        }
+
+        const targetPlayerId = document.getElementById('targetWinnerSelect')?.value;
+        let fetchUrl = `/Draw/RandomDraw?tontineId=${tontineId}`;
+        if (targetPlayerId) {
+            fetchUrl += `&targetPlayerId=${targetPlayerId}`;
+        }
+
+        fetch(fetchUrl)
             .then(r => r.json())
             .then(res => {
-                if (res.success) {
-                    selectShare(res.shareId, res.playerName, res.playerId);
-                    const el = document.getElementById('share-' + res.shareId);
-                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else {
-                    alert(res.message);
+                if (!res.success) {
+                    Swal.fire('Lỗi', res.message, 'error');
+                    return;
+                }
+
+                wheelResultData = res;
+                const overlay = document.getElementById('spinnerOverlay');
+                overlay.classList.remove('d-none');
+                document.getElementById('spinnerResultMsg').classList.add('d-none');
+                
+                // Target Angle math
+                let winnerIndex = namesForWheel.findIndex(n => n === res.playerName);
+                if(winnerIndex === -1) winnerIndex = 0; // Fallback
+                
+                const arc = Math.PI * 2 / namesForWheel.length;
+                let spinDuration = 5000;
+                let startTime = null;
+                let extraSpins = 10;
+                
+                // Need to end such that winner slice is at TOP (-Math.PI/2)
+                let targetRotation = (-Math.PI / 2) - (winnerIndex * arc + arc / 2) + (Math.PI * 2 * extraSpins);
+                // Ensure target rotation is perfectly smooth from current rotation
+                let startRotation = currentRotation % (Math.PI * 2);
+
+                function animateSpin(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const elapsed = timestamp - startTime;
+                    let progress = Math.min(elapsed / spinDuration, 1);
+                    
+                    // EaseOutQuart: slows down beautifully
+                    let easeProgress = 1 - Math.pow(1 - progress, 4);
+
+                    currentRotation = startRotation + (targetRotation - startRotation) * easeProgress;
+                    drawWheel(currentRotation);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateSpin);
+                    } else {
+                        // Finished
+                        document.getElementById('winnerTextValue').innerText = res.playerName;
+                        document.getElementById('spinnerResultMsg').classList.remove('d-none');
+                        
+                        // Celebration!
+                        triggerCelebration();
+
+                        setTimeout(() => {
+                            closeWheelAndSelect();
+                        }, 3500);
+                    }
+                }
+                
+                // Blastoff
+                requestAnimationFrame(animateSpin);
+            }).catch(err => {
+                Swal.fire('Lỗi', 'Kết nối thất bại.', 'error');
+            });
+    }
+
+    function triggerCelebration() {
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const particles = [];
+        const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#ffffff', '#ec4899'];
+
+        for (let i = 0; i < 120; i++) {
+            particles.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                vx: (Math.random() - 0.5) * 20,
+                vy: (Math.random() - 0.7) * 20,
+                size: Math.random() * 5 + 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                life: 1.0,
+                decay: Math.random() * 0.015 + 0.01
+            });
+        }
+
+        function animate() {
+            let stillAlive = false;
+            // Clear or partially clear for trails? Let's just draw over since wheel is still there.
+            // But we shouldn't clear the wheel. We draw particles on top.
+            particles.forEach(p => {
+                if (p.life > 0) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.25; // Gravity
+                    p.life -= p.decay;
+                    
+                    ctx.save();
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                    stillAlive = true;
                 }
             });
+            if (stillAlive) requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    function closeWheelAndSelect() {
+        document.getElementById('spinnerOverlay').classList.add('d-none');
+        if (wheelResultData) {
+            selectShare(wheelResultData.shareId, wheelResultData.playerName, wheelResultData.playerId);
+            document.getElementById('share-' + wheelResultData.shareId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     function previewDraw(tontineId) {
@@ -241,8 +454,9 @@
 
             <div class="p-3 bg-light border-0 rounded-3 mb-4 small d-flex justify-content-between align-items-center">
                 <span>Hụi viên hốt: <strong>${data.winnerPlayerName}</strong></span>
-                <span>Tiền thăm: <strong class="text-warning">${fmtNum(data.bidAmount)} đ</strong></span>
+                <span>Thăm kêu: <strong class="text-warning">${fmtNum(data.bidAmount)} đ</strong></span>
                 <span>Tiền thảo: <strong class="text-danger">${fmtNum(data.commissionFee)} đ</strong></span>
+                <span>Nợ cũ: <strong class="text-danger">-${fmtNum(data.oldDebtDeduction)} đ</strong></span>
             </div>
 
             <div class="table-responsive rounded-3 border">
@@ -252,7 +466,8 @@
                             <th class="ps-3 py-3">Danh sách hụi viên</th>
                             <th class="text-end">Phải đóng</th>
                             <th class="text-end">Được nhận</th>
-                            <th class="text-end pe-3">Net (Thực thu)</th>
+                            <th class="text-end">Trừ nợ cũ</th>
+                            <th class="text-end pe-3">Thực nhận</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -267,14 +482,15 @@
                 </td>
                 <td class="text-end">${pt.amountPay > 0 ? fmtNum(pt.amountPay) : '-'}</td>
                 <td class="text-end text-success">${pt.amountReceive > 0 ? fmtNum(pt.amountReceive) : '-'}</td>
-                <td class="text-end pe-3 ${netClass}">${pt.netTotal >= 0 ? '+' : ''}${fmtNum(pt.netTotal)}</td>
+                <td class="text-end text-danger">${pt.oldDebtDeduction > 0 ? '-' + fmtNum(pt.oldDebtDeduction) : '-'}</td>
+                <td class="text-end pe-3 ${netClass}">${pt.finalTotal >= 0 ? '+' : ''}${fmtNum(pt.finalTotal)}</td>
             </tr>`;
         });
 
         html += `</tbody></table></div>
             <div class="mt-4 text-end">
                 <button class="btn btn-success btn-lg px-5 rounded-pill shadow fw-bold" 
-                        onclick="confirmDraw(${tontineId}, ${data.winningShareId}, ${data.bidAmount}, '${data.winnerPlayerName.replace(/'/g, "\\'")}', ${data.totalReceived})">
+                        onclick="confirmDraw(${tontineId}, ${data.winningShareId}, ${data.bidAmount}, '${data.winnerPlayerName.replace(/'/g, "\\'")}', ${data.totalReceived}, ${data.oldDebtDeduction}, ${data.finalReceived})">
                     ✅ CHỐT KỲ KHUI NÀY
                 </button>
             </div>
@@ -284,7 +500,7 @@
         document.getElementById('previewPanel').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function confirmDraw(tontineId, shareId, bid, winner, total) {
+    function confirmDraw(tontineId, shareId, bid, winner, total, oldDebt, final) {
         document.getElementById('execTontineId').value = tontineId;
         document.getElementById('execShareId').value = shareId;
         document.getElementById('execBidAmount').value = bid;
@@ -305,9 +521,17 @@
                     <span>Tiền thăm đặt:</span>
                     <strong class="text-warning">${fmtNum(bid)} đ</strong>
                 </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tổng tiền hốt:</span>
+                    <strong class="text-secondary">${fmtNum(total)} đ</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2 text-danger">
+                    <span>Trừ nợ cũ:</span>
+                    <strong>-${fmtNum(oldDebt)} đ</strong>
+                </div>
                 <div class="d-flex justify-content-between fs-5 pt-2 border-top">
-                    <span>Tổng tiền giao hụi:</span>
-                    <strong class="text-success">${fmtNum(total)} đ</strong>
+                    <span>THỰC GIAO (Còn lại):</span>
+                    <strong class="text-success">${fmtNum(final)} đ</strong>
                 </div>
             </div>`;
             
