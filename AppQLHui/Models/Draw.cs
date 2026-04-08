@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace AppQLHui.Models
 {
@@ -10,6 +11,7 @@ namespace AppQLHui.Models
         public int Id { get; set; }
 
         public int TontineId { get; set; }
+        [ValidateNever]
         public Tontine Tontine { get; set; } = null!;
 
         [Display(Name = "Kỳ số")]
@@ -20,6 +22,7 @@ namespace AppQLHui.Models
 
         /// <summary>Phần hụi trúng kỳ này</summary>
         public int? WinningShareId { get; set; }
+        [ValidateNever]
         public TontineShare? WinningShare { get; set; }
 
         [Column(TypeName = "decimal(18,0)")]
@@ -39,9 +42,11 @@ namespace AppQLHui.Models
         public decimal ActualReceived { get; set; }
 
         // Navigation
+        [ValidateNever]
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
         /// <summary>Back-ref: shares whose WonDrawId points here</summary>
+        [ValidateNever]
         public ICollection<TontineShare> WonShares { get; set; } = new List<TontineShare>();
     }
 }

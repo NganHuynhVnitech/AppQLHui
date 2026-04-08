@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace AppQLHui.Models
 {
@@ -8,9 +9,11 @@ namespace AppQLHui.Models
         public int Id { get; set; }
 
         public int DrawId { get; set; }
+        [ValidateNever]
         public Draw Draw { get; set; } = null!;
 
         public int PlayerId { get; set; }
+        [ValidateNever]
         public Player Player { get; set; } = null!;
 
         [Column(TypeName = "decimal(18,0)")]

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace AppQLHui.Models
 {
@@ -52,10 +53,13 @@ namespace AppQLHui.Models
 
         // Ownership
         public int OwnerId { get; set; }
+        [ValidateNever]
         public AppUser Owner { get; set; } = null!;
 
         // Navigation
+        [ValidateNever]
         public ICollection<TontineShare> Shares { get; set; } = new List<TontineShare>();
+        [ValidateNever]
         public ICollection<Draw> Draws { get; set; } = new List<Draw>();
     }
 }

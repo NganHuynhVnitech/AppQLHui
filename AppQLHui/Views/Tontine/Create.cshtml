@@ -78,20 +78,26 @@
                             <label class="form-label fw-bold text-secondary small text-uppercase mb-3">Cách thức thu tiền thảo</label>
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <div class="form-check custom-radio-card p-3 rounded-3 border h-100 cursor-pointer">
+                                    <div class="form-check custom-radio-card p-3 rounded-4 border h-100 cursor-pointer shadow-sm transition-all" onclick="selectFeeType('Before')">
                                         <input class="form-check-input d-none" type="radio" name="FeeType" id="feeBefore" value="Before">
                                         <label class="form-check-label w-100 cursor-pointer" for="feeBefore">
-                                            <div class="fw-bold fs-6">Thảo thu trước</div>
-                                            <div class="small text-muted">Trừ trực tiếp vào tiền hốt của người trúng ngay lúc giao.</div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <i class="bi bi-dash-circle-fill text-danger fs-5"></i>
+                                                <div class="fw-bold fs-6">Thảo thu trước</div>
+                                            </div>
+                                            <div class="small text-muted opacity-75">Trừ trực tiếp vào tiền hốt của người trúng ngay lúc giao.</div>
                                         </label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-check custom-radio-card p-3 rounded-3 border h-100 cursor-pointer shadow-sm">
+                                    <div class="form-check custom-radio-card p-3 rounded-4 border h-100 cursor-pointer shadow-sm transition-all active" onclick="selectFeeType('After')">
                                         <input class="form-check-input d-none" type="radio" name="FeeType" id="feeAfter" value="After" checked>
                                         <label class="form-check-label w-100 cursor-pointer" for="feeAfter">
-                                            <div class="fw-bold fs-6">Thảo thu sau</div>
-                                            <div class="small text-muted">Thu sau khi đã giao đủ hụi. (Phổ biến hơn)</div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <i class="bi bi-plus-circle-fill text-success fs-5"></i>
+                                                <div class="fw-bold fs-6">Thảo thu sau</div>
+                                            </div>
+                                            <div class="small text-muted opacity-75">Thu sau khi đã giao đủ hụi. (Phổ biến nhất)</div>
                                         </label>
                                     </div>
                                 </div>
@@ -180,21 +186,62 @@
 </div>
 
 <style>
-    .custom-radio-card { transition: all 0.2s; background: #f8fafc; }
-    .custom-radio-card:hover { border-color: var(--primary); background: #f1f5f9; }
-    .custom-radio-card input:checked + label { color: var(--primary); }
-    .custom-radio-card:has(input:checked) { border-color: var(--primary); background: #eff6ff; border-width: 2px; }
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+        --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .card { border-radius: 24px; transition: transform 0.3s ease; }
+    .custom-radio-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; border: 2px solid #f1f5f9; }
+    .custom-radio-card:hover { border-color: #3b82f6; background: #f8fafc; transform: translateY(-2px); }
+    .custom-radio-card.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1) !important; }
+    .custom-radio-card.active .fw-bold { color: #2563eb; }
+    
+    .input-group { transition: all 0.2s; }
+    .input-group:focus-within { transform: scale(1.02); }
+    
+    .btn-cycle { border-radius: 12px; transition: all 0.2s; font-size: 0.9rem; padding: 12px 10px; }
+    .btn-cycle:hover { transform: scale(1.05); filter: brightness(0.95); }
+    
     .fw-800 { font-weight: 800; }
     .cursor-pointer { cursor: pointer; }
+    .transition-all { transition: all 0.3s ease; }
 </style>
 
 @section Scripts { 
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
     <script>
-        document.querySelectorAll('.custom-radio-card').forEach(card => {
-            card.addEventListener('click', () => {
-                card.querySelector('input').checked = true;
-            });
+        function selectFeeType(val) {
+            document.querySelectorAll('.custom-radio-card').forEach(c => c.classList.remove('active'));
+            const input = document.getElementById(val === 'Before' ? 'feeBefore' : 'feeAfter');
+            input.checked = true;
+            input.closest('.custom-radio-card').classList.add('active');
+        }
+
+        // Real-time Number Formatting for Premium Feel
+        function formatNumberInput(input) {
+            let val = input.value.replace(/\D/g, "");
+            if (val === "") return;
+            input.value = parseInt(val).toLocaleString('vi-VN');
+        }
+
+        // We need to un-format before submit
+        document.getElementById('tontineCreateForm').addEventListener('submit', function(e) {
+            const baseAmount = document.querySelector('input[name="BaseAmount"]');
+            const commission = document.querySelector('input[name="CommissionFee"]');
+            baseAmount.value = baseAmount.value.replace(/\D/g, "");
+            commission.value = commission.value.replace(/\D/g, "");
+        });
+
+        // Event listeners for formatting
+        const baseInput = document.querySelector('input[name="BaseAmount"]');
+        const commInput = document.querySelector('input[name="CommissionFee"]');
+
+        [baseInput, commInput].forEach(el => {
+            // Change type to text for formatting
+            el.type = "text"; 
+            el.addEventListener('input', function() { formatNumberInput(this); });
+            // Initial format
+            if (el.value) formatNumberInput(el);
         });
 
         // Cycle Modal Logic
@@ -202,15 +249,16 @@
         const customDaysInput = document.getElementById('customDaysInput');
         const cycleModal = new bootstrap.Modal(document.getElementById('cycleModal'));
 
-        // Handle predefined buttons
         document.querySelectorAll('.btn-cycle').forEach(btn => {
             btn.addEventListener('click', function() {
                 cycleTypeInput.value = this.innerText.trim();
                 cycleModal.hide();
+                // Add a small bounce effect to indicate selection
+                cycleTypeInput.parentElement.classList.add('animate-bounce-in');
+                setTimeout(() => cycleTypeInput.parentElement.classList.remove('animate-bounce-in'), 500);
             });
         });
 
-        // Handle Custom input
         document.getElementById('btnAcceptCustom').addEventListener('click', function() {
             if (customDaysInput.value.trim() !== "") {
                 cycleTypeInput.value = customDaysInput.value.trim();
