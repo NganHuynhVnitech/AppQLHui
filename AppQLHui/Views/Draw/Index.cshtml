@@ -1,0 +1,675 @@
+@using AppQLHui.Models
+@{
+    ViewData["Title"] = "Điều hành Khui Hụi";
+    var runningTontines = (List<Tontine>)ViewBag.RunningTontines;
+    var selectedTontine = ViewBag.SelectedTontine as Tontine;
+    var livingShares = ViewBag.LivingShares as List<TontineShare>;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-800 mb-0">🎯 Điều Hành Khui Hụi</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-light rounded-pill px-4">Làm mới</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- PANEL 1: Cấu hình kỳ khui -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-800 text-primary d-flex align-items-center">
+                        <span class="bg-primary bg-opacity-10 p-2 rounded-3 me-2">
+                            <i class="bi bi-gear-fill text-primary"></i>
+                        </span>
+                        Cấu hình kỳ hốt
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Bước 1: Chọn dây -->
+                    <div class="mb-4">
+                        <label class="form-label fw-800 text-secondary smallest text-uppercase tracking-wider mb-2">1. Chọn dây hụi</label>
+                        <form method="get" asp-action="Index" id="tontineForm">
+                            <select name="tontineId" class="form-select form-select-lg shadow-sm border-0 bg-light rounded-3" 
+                                    onchange="this.form.submit()" style="font-weight: 700;">
+                                <option value="">-- Chọn dây đang chạy --</option>
+                                @foreach (var t in runningTontines)
+                                {
+                                    <option value="@t.Id" selected="@(selectedTontine?.Id == t.Id ? "selected" : null)">
+                                        @t.Name (@t.BaseAmount.ToString("N0")đ)
+                                    </option>
+                                }
+                            </select>
+                        </form>
+                    </div>
+
+                    @if (selectedTontine != null && livingShares != null)
+                    {
+                        <div class="p-3 bg-primary bg-opacity-10 rounded-4 border border-primary border-opacity-10 mb-4 d-flex align-items-center">
+                            <div class="me-3 fs-2">📱</div>
+                            <div>
+                                <div class="fw-800 fs-5 text-primary mb-0">@selectedTontine.Name</div>
+                                <div class="smallest fw-bold text-secondary opacity-75">
+                                    Dây @selectedTontine.BaseAmount.ToString("N0") | 
+                                    Sống: <span class="text-dark">@livingShares.Count</span> |
+                                    Kỳ hốt: <span class="text-primary text-decoration-underline">#(selectedTontine.Draws.Count + 1)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bước 2: Tiền thăm -->
+                        <div class="mb-4">
+                            <label class="form-label fw-800 text-secondary smallest text-uppercase tracking-wider mb-2">2. Tiền thăm kêu (Bid)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-success fw-bold px-3">đ</span>
+                                <input type="number" id="bidAmount" class="form-control border-0 px-2 fw-800 text-success" 
+                                       placeholder="0" value="0" min="0" max="@selectedTontine.BaseAmount" />
+                            </div>
+                            <div class="d-flex justify-content-between mt-2 px-1">
+                                <small class="smallest text-muted">Mệnh giá dây: @selectedTontine.BaseAmount.ToString("N0")đ</small>
+                                <small class="smallest text-primary cursor-pointer fw-bold" onclick="document.getElementById('bidAmount').value = 0">Hủy đặt thăm</small>
+                            </div>
+                        </div>
+
+                        <!-- Bước 2.5: Ngày hốt -->
+                        <div class="mb-4">
+                            <label class="form-label fw-800 text-secondary smallest text-uppercase tracking-wider mb-2">2.5. Ngày hốt</label>
+                            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-primary px-3"><i class="bi bi-calendar-event"></i></span>
+                                <input type="date" id="drawDateInput" class="form-control border-0 px-2" 
+                                       value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                            </div>
+                        </div>
+
+                        <!-- Bước 2.6: Trừ khác -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-800 text-secondary smallest text-uppercase tracking-wider mb-0">2.6. Trừ thêm / Nợ khác</label>
+                                <div class="form-check form-switch smallest">
+                                    <input class="form-check-input" type="checkbox" id="enableOtherDeduction" checked onchange="toggleDeductionInputs()">
+                                    <label class="form-check-label fw-bold text-primary" for="enableOtherDeduction">Bật</label>
+                                </div>
+                            </div>
+                            <div id="deductionInputsArea">
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden mb-2">
+                                    <span class="input-group-text border-0 bg-white text-danger fw-bold px-3">đ</span>
+                                    <input type="number" id="otherDeduction" class="form-control border-0 px-2 text-danger fw-bold" 
+                                           placeholder="Số tiền trừ..." value="0" min="0" oninput="if(this.value < 0) this.value = 0;" />
+                                </div>
+                                <input type="text" id="otherDeductionNote" class="form-control form-control-sm border-0 bg-light rounded-3 px-3 shadow-none smallest" 
+                                       placeholder="Lý do trừ (ví dụ: Nợ sống kỳ trước)..." />
+                            </div>
+                        </div>
+
+                        <!-- Bước 3: Người hốt -->
+                        <div class="mb-4">
+                            <label class="form-label fw-800 text-secondary smallest text-uppercase tracking-wider mb-2">3. Chọn người hốt</label>
+                            <div class="mb-3 d-flex gap-2">
+                                <select id="targetWinnerSelect" class="form-select border-0 shadow-sm fw-bold text-primary rounded-3 smallest">
+                                    <option value="">--- Ngẫu Nhiên ---</option>
+                                    @foreach (var s in livingShares)
+                                    {
+                                        <option value="@s.PlayerId">@s.Player.Name (VT: @s.Position)</option>
+                                    }
+                                </select>
+                                <button class="btn btn-warning shadow-sm border-0 fw-800 rounded-3 smallest px-3 text-nowrap" onclick="randomDraw(@selectedTontine.Id)">
+                                    🎲 Quay Số
+                                </button>
+                            </div>
+                            
+                            <!-- Search -->
+                            <div class="input-group input-group-sm shadow-sm border-0 bg-light rounded-pill overflow-hidden mb-3 px-2">
+                                <span class="input-group-text border-0 bg-transparent ps-2"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="shareSearch" class="form-control border-0 bg-transparent smallest" placeholder="Tìm tên hụi viên..." oninput="filterShares()" />
+                            </div>
+
+                            <div class="share-grid-scroll p-1" style="max-height: 300px; overflow-y: auto;">
+                                <div class="row row-cols-1 g-2">
+                                    @foreach (var s in livingShares)
+                                    {
+                                        <div class="col share-column" data-player-name="@s.Player.Name">
+                                            <div class="card share-item-premium border-0 shadow-sm rounded-3" id="share-@s.Id" 
+                                                 onclick="selectShare(@s.Id, '@s.Player.Name', @s.PlayerId)">
+                                                <div class="card-body p-2 px-3 d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div class="fw-bold mb-0 smallest">@s.Player.Name</div>
+                                                        <div class="fs-xs text-muted">Vị trí #@s.Position</div>
+                                                    </div>
+                                                    <div class="status-indicator"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-lg btn-primary w-100 shadow rounded-4 py-3 fw-800 mt-2" onclick="previewDraw(@selectedTontine.Id)">
+                            <i class="bi bi-calculator me-2"></i> XEM TOÁN TRƯỚC KHI CHỐT
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL 2: Kết quả & Preview -->
+        <div class="col-lg-7">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="mb-0 fw-bold text-success"><i class="bi bi-receipt me-2"></i>Bảng tính toán chi tiết</h5>
+                </div>
+                <div class="card-body" id="previewPanel">
+                    <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted py-5">
+                        <i class="bi bi-pie-chart fs-1 mb-3 opacity-25"></i>
+                        <p class="fs-5 fw-bold mb-0">Chưa có dữ liệu tính toán</p>
+                        <p class="small text-center px-5">Vui lòng hoàn tất cấu hình bên trái và nhấn "Xem tính toán" để hiển thị bảng dòng tiền chi tiết cho kỳ hốt này.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác nhận -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-success text-white border-0 py-3" style="border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold">Xác nhận chốt kỳ hốt</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="confirmBody"></div>
+            <div class="modal-footer border-0 p-3">
+                <form asp-action="Execute" method="post" id="executeForm" class="w-100">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tontineId" id="execTontineId" />
+                    <input type="hidden" name="winningShareId" id="execShareId" />
+                    <input type="hidden" name="bidAmount" id="execBidAmount" />
+                    <input type="hidden" name="drawDate" id="execDrawDate" />
+                    <input type="hidden" name="otherDeduction" id="execOtherDeduction" />
+                    <input type="hidden" name="otherDeductionNote" id="execOtherDeductionNote" />
+                    <div class="row g-2">
+                        <div class="col-4">
+                             <button type="button" class="btn btn-light w-100 rounded-pill" data-bs-dismiss="modal">Để sau</button>
+                        </div>
+                        <div class="col-8">
+                            <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">XÁC NHẬN CHỐT</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay Spinner Randomizer (Canvas Wheel) -->
+<div id="spinnerOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center d-none" style="background: rgba(0,0,0,0.85); z-index: 9999;">
+    <h2 class="text-warning fw-800 mb-4 animate-pulse" id="wheelTitle"><i class="bi bi-stars"></i> ĐANG QUAY SỐ <i class="bi bi-stars"></i></h2>
+    <div class="position-relative" style="width: 500px; height: 500px;">
+        <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 50px solid black; z-index: 10; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));"></div>
+        <canvas id="wheelCanvas" width="500" height="500" class="shadow-lg rounded-circle" style="border: 8px solid white;"></canvas>
+    </div>
+    <div id="spinnerResultMsg" class="h3 text-white fw-bold d-none mt-4 text-center">
+        <i class="bi bi-trophy-fill text-warning me-2 d-block display-4 mb-2"></i>
+        <span class="text-warning display-5 fw-800" id="winnerTextValue">???</span><br/>
+        ĐÃ TRÚNG HỤI KỲ NÀY!
+    </div>
+</div>
+
+<style>
+    .share-item-premium { cursor: pointer; transition: all 0.2s; border: 2px solid transparent !important; }
+    .share-item-premium:hover { transform: translateX(5px); background-color: #f8fafc; }
+    .share-item-premium.selected { border-color: var(--success) !important; background-color: #ecfdf5; }
+    .share-item-premium.selected .status-indicator { 
+        width: 12px; height: 12px; background-color: var(--success); border-radius: 50%; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); 
+    }
+    .fw-800 { font-weight: 800; }
+    .cursor-pointer { cursor: pointer; }
+    .smallest { font-size: 0.75rem; }
+    .fs-xs { font-size: 0.7rem !important; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Bill card styles */
+    .receipt-preview { max-width: 100%; margin: 0 auto; }
+    .info-box { border: 1px solid rgba(0,0,0,0.05); }
+    .winner-name { font-size: 1.1rem; line-height: 1.2; }
+</style>
+
+@section Scripts {
+<script>
+    let selectedShareId = null;
+    let selectedPlayerName = '';
+
+    function filterShares() {
+        const query = document.getElementById('shareSearch').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const items = document.querySelectorAll('.share-column');
+        items.forEach(col => {
+            const name = col.getAttribute('data-player-name').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (name.includes(query)) {
+                col.classList.remove('d-none');
+            } else {
+                col.classList.add('d-none');
+            }
+        });
+    }
+
+    function selectShare(shareId, playerName, playerId) {
+        document.querySelectorAll('.share-item-premium').forEach(el => el.classList.remove('selected'));
+        document.getElementById('share-' + shareId)?.classList.add('selected');
+        selectedShareId = shareId;
+        selectedPlayerName = playerName;
+    }
+
+    // --- CANVAS WHEEL LOGIC ---
+    let namesForWheel = [];
+    let sliceColors = ['#dc3545', '#198754', '#0d6efd', '#ffc107', '#fd7e14', '#6f42c1', '#20c997', '#e83e8c'];
+    let currentRotation = 0;
+    let wheelCtx = null;
+    let wheelResultData = null;
+
+    function initWheel() {
+        namesForWheel = Array.from(document.querySelectorAll('.share-item-premium .fw-bold.mb-0')).map(el => el.innerText);
+        const canvas = document.getElementById('wheelCanvas');
+        if (!canvas) return;
+        wheelCtx = canvas.getContext('2d');
+        drawWheel(0);
+    }
+
+    function drawWheel(angleOffset) {
+        if(!wheelCtx || namesForWheel.length === 0) return;
+        const cw = wheelCtx.canvas.width;
+        const ch = wheelCtx.canvas.height;
+        const cx = cw / 2;
+        const cy = ch / 2;
+        const radius = cx;
+        const arc = Math.PI * 2 / namesForWheel.length;
+
+        wheelCtx.clearRect(0, 0, cw, ch);
+
+        for (let i = 0; i < namesForWheel.length; i++) {
+            const startAngle = angleOffset + i * arc;
+            const endAngle = startAngle + arc;
+
+            wheelCtx.beginPath();
+            let colorIndex = i % sliceColors.length;
+            // Avoid same color touching at the end
+            if (i === namesForWheel.length - 1 && colorIndex === 0 && namesForWheel.length > 2) {
+                colorIndex = 1; 
+            }
+            wheelCtx.fillStyle = sliceColors[colorIndex];
+            
+            wheelCtx.moveTo(cx, cy);
+            wheelCtx.arc(cx, cy, radius, startAngle, endAngle);
+            wheelCtx.fill();
+            
+            // Draw slice separator lines
+            wheelCtx.lineWidth = 2;
+            wheelCtx.strokeStyle = 'white';
+            wheelCtx.stroke();
+
+            // Draw Text
+            wheelCtx.save();
+            wheelCtx.translate(cx, cy);
+            wheelCtx.rotate(startAngle + arc / 2);
+            wheelCtx.textAlign = 'right';
+            wheelCtx.textBaseline = 'middle';
+            wheelCtx.fillStyle = '#ffffff';
+            wheelCtx.font = 'bold 22px Inter, sans-serif';
+            
+            // Draw text and a little dot near the edge
+            wheelCtx.fillText(namesForWheel[i], radius - 25, 0);
+            
+            // Draw a tiny circle on the rim
+            wheelCtx.beginPath();
+            wheelCtx.arc(radius - 12, 0, 4, 0, Math.PI*2);
+            wheelCtx.fillStyle = 'rgba(255,255,255,0.5)';
+            wheelCtx.fill();
+
+            wheelCtx.restore();
+        }
+    }
+
+    function randomDraw(tontineId) {
+        initWheel(); // refresh names
+        if (namesForWheel.length === 0) {
+            Swal.fire('Lỗi', 'Không có hụi viên nào !', 'error');
+            return;
+        }
+
+        const targetPlayerId = document.getElementById('targetWinnerSelect')?.value;
+        let fetchUrl = `/Draw/RandomDraw?tontineId=${tontineId}`;
+        if (targetPlayerId) {
+            fetchUrl += `&targetPlayerId=${targetPlayerId}`;
+        }
+
+        fetch(fetchUrl)
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success) {
+                    Swal.fire('Lỗi', res.message, 'error');
+                    return;
+                }
+
+                wheelResultData = res;
+                const overlay = document.getElementById('spinnerOverlay');
+                overlay.classList.remove('d-none');
+                document.getElementById('spinnerResultMsg').classList.add('d-none');
+                
+                // Target Angle math
+                let winnerIndex = namesForWheel.findIndex(n => n === res.playerName);
+                if(winnerIndex === -1) winnerIndex = 0; // Fallback
+                
+                const arc = Math.PI * 2 / namesForWheel.length;
+                let spinDuration = 5000;
+                let startTime = null;
+                let extraSpins = 10;
+                
+                // Need to end such that winner slice is at TOP (-Math.PI/2)
+                let targetRotation = (-Math.PI / 2) - (winnerIndex * arc + arc / 2) + (Math.PI * 2 * extraSpins);
+                // Ensure target rotation is perfectly smooth from current rotation
+                let startRotation = currentRotation % (Math.PI * 2);
+
+                function animateSpin(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const elapsed = timestamp - startTime;
+                    let progress = Math.min(elapsed / spinDuration, 1);
+                    
+                    // EaseOutQuart: slows down beautifully
+                    let easeProgress = 1 - Math.pow(1 - progress, 4);
+
+                    currentRotation = startRotation + (targetRotation - startRotation) * easeProgress;
+                    drawWheel(currentRotation);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateSpin);
+                    } else {
+                        // Finished
+                        document.getElementById('winnerTextValue').innerText = res.playerName;
+                        document.getElementById('spinnerResultMsg').classList.remove('d-none');
+                        
+                        // Celebration!
+                        triggerCelebration();
+
+                        setTimeout(() => {
+                            closeWheelAndSelect();
+                        }, 3500);
+                    }
+                }
+                
+                // Blastoff
+                requestAnimationFrame(animateSpin);
+            }).catch(err => {
+                Swal.fire('Lỗi', 'Kết nối thất bại.', 'error');
+            });
+    }
+
+    function triggerCelebration() {
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const particles = [];
+        const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#ffffff', '#ec4899'];
+
+        for (let i = 0; i < 120; i++) {
+            particles.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                vx: (Math.random() - 0.5) * 20,
+                vy: (Math.random() - 0.7) * 20,
+                size: Math.random() * 5 + 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                life: 1.0,
+                decay: Math.random() * 0.015 + 0.01
+            });
+        }
+
+        function animate() {
+            let stillAlive = false;
+            // Clear or partially clear for trails? Let's just draw over since wheel is still there.
+            // But we shouldn't clear the wheel. We draw particles on top.
+            particles.forEach(p => {
+                if (p.life > 0) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.25; // Gravity
+                    p.life -= p.decay;
+                    
+                    ctx.save();
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                    stillAlive = true;
+                }
+            });
+            if (stillAlive) requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    function closeWheelAndSelect() {
+        document.getElementById('spinnerOverlay').classList.add('d-none');
+        if (wheelResultData) {
+            selectShare(wheelResultData.shareId, wheelResultData.playerName, wheelResultData.playerId);
+            document.getElementById('share-' + wheelResultData.shareId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    function previewDraw(tontineId) {
+        if (!selectedShareId) { 
+           Swal.fire('Thiếu thông tin', 'Vui lòng chọn hụi viên hốt kỳ này!', 'warning');
+           return; 
+        }
+        const isDedEnabled = document.getElementById('enableOtherDeduction').checked;
+        const bid = parseFloat(document.getElementById('bidAmount').value) || 0;
+        const otherDed = isDedEnabled ? (parseFloat(document.getElementById('otherDeduction').value) || 0) : 0;
+        const otherDedNote = isDedEnabled ? (document.getElementById('otherDeductionNote').value || '') : '';
+
+        fetch('/Draw/Preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: `tontineId=${tontineId}&winningShareId=${selectedShareId}&bidAmount=${bid}&otherDeduction=${otherDed}&otherDeductionNote=${encodeURIComponent(otherDedNote)}`
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                renderPreview(res.data, tontineId);
+            } else {
+                Swal.fire('Lỗi', res.message, 'error');
+            }
+        });
+    }
+
+    function renderPreview(data, tontineId) {
+        let livingAmount = data.baseAmount - data.bidAmount;
+        let tontineTotalValue = data.totalFromLiving + data.totalFromDead;
+        
+        // Date formatting
+        const dateInput = document.getElementById('drawDateInput').value;
+        const displayDate = dateInput ? dateInput.split('-').reverse().join('/') : new Date().toLocaleDateString('vi-VN');
+
+        let html = `
+        <div class="animate-fade-in receipt-preview bg-white p-3 p-md-4 rounded-4 shadow-sm border">
+            <!-- Header -->
+            <div class="text-center mb-4 pb-3 border-bottom border-light">
+                <h6 class="fw-800 text-primary mb-1">XEM TRƯỚC HÓA ĐƠN</h6>
+                <h1 class="fw-800 text-uppercase mb-1" style="font-size: 1.5rem; letter-spacing: 3px;">GIẤY GIAO HỤI</h1>
+                <div class="d-flex justify-content-center gap-2 mb-0">
+                    <span class="badge bg-primary px-2 py-1 fs-xs">Kỳ #${data.sequenceNumber}</span>
+                    <span class="badge bg-light text-dark border px-2 py-1 fs-xs">Ngày: ${displayDate}</span>
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded-3 h-100 info-box">
+                        <h6 class="text-primary fw-800 text-uppercase fs-xs mb-2 border-bottom pb-1">1. Dây hụi</h6>
+                        <div class="d-flex justify-content-between mb-1 smallest"><span>Mệnh giá:</span> <span class="fw-bold">${fmtNum(data.baseAmount)}</span></div>
+                        <div class="d-flex justify-content-between mb-0 smallest"><span>Tên dây:</span> <span class="fw-bold text-truncate ms-1">${data.tontineName}</span></div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-primary text-white rounded-3 h-100 shadow-sm info-box">
+                        <h6 class="opacity-75 fw-bold text-uppercase fs-xs mb-2 border-bottom border-white border-opacity-25 pb-1">2. Thanh toán</h6>
+                        <div class="winner-name fw-800 mb-1 text-truncate">${data.winnerPlayerName.toUpperCase()}</div>
+                        <div class="d-flex justify-content-between smallest opacity-75"><span>Thăm kêu:</span> <span class="fw-bold text-warning">${fmtNum(data.bidAmount)}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formula Cards -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="p-2 bg-success bg-opacity-10 text-success rounded-3 border border-success border-opacity-25 text-center">
+                        <div class="smallest fw-bold text-uppercase opacity-75">Hụi Sống</div>
+                        <div class="fw-800 fs-6">${data.countLivingPortions} <small class="smallest">phần</small> × ${fmtNum(livingAmount/1000)}k</div>
+                        <div class="mt-1 border-top border-success border-opacity-10 pt-1">TC <span class="fw-800">${fmtNum(data.totalFromLiving)}</span></div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-danger bg-opacity-10 text-danger rounded-3 border border-danger border-opacity-25 text-center">
+                        <div class="smallest fw-bold text-uppercase opacity-75">Hụi Chết</div>
+                        <div class="fw-800 fs-6">${data.countDeadPortions} <small class="smallest">phần</small> × ${fmtNum(data.baseAmount/1000)}k</div>
+                        <div class="mt-1 border-top border-danger border-opacity-10 pt-1">TC <span class="fw-800">${fmtNum(data.totalFromDead)}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- summary Card -->
+            <div class="card border-0 bg-light rounded-3 p-3 mb-4 shadow-sm">
+                <div class="d-flex justify-content-between fw-bold smallest mb-1">
+                    <span>Tiền hụi thu gom:</span>
+                    <span>${fmtNum(tontineTotalValue)}</span>
+                </div>
+                <div class="d-flex justify-content-between text-secondary smallest mb-1">
+                    <span>- Nợ cũ / Thảo hụi:</span>
+                    <span>${fmtNum(data.oldDebtDeduction + data.commissionFee)}</span>
+                </div>
+                ${data.otherDeduction > 0 ? `
+                <div class="d-flex justify-content-between text-secondary smallest mb-1">
+                    <span>- Trừ khác ${data.otherDeductionNote ? `(${data.otherDeductionNote})` : ''}:</span>
+                    <span>${fmtNum(data.otherDeduction)}</span>
+                </div>` : ''}
+                <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+                    <span class="fw-800 text-dark">THỰC GIAO:</span>
+                    <span class="fs-4 fw-800 text-danger">${fmtNum(data.totalReceived - data.otherDeduction)} <small class="fs-6">đ</small></span>
+                </div>
+            </div>
+
+            <h6 class="fw-800 text-secondary smallest text-uppercase mb-2"><i class="bi bi-list-check me-1"></i>Chi tiết các phần đóng hụi</h6>
+            <div class="table-responsive rounded-3 border mb-3">
+                <table class="table table-hover align-middle mb-0 smallest">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-2 py-2">Hụi viên</th>
+                            <th class="text-end">Phải đóng</th>
+                            <th class="text-end">Được nhận</th>
+                            <th class="text-end pe-2">Thực nhận</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        data.playerTransactions.forEach(pt => {
+            const netAmount = pt.amountReceive - pt.amountPay - pt.oldDebtDeduction - pt.otherDeduction;
+            const netClass = netAmount >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+            const winnerIcon = pt.isWinner ? '🏆 ' : '';
+            html += `<tr class="${pt.isWinner ? 'bg-primary bg-opacity-10' : ''}">
+                <td class="ps-2">
+                    <div class="fw-bold">${winnerIcon}${pt.playerName}</div>
+                    <div class="fs-xs text-muted">S:${pt.livingShareCount} | C:${pt.deadShareCount}</div>
+                </td>
+                <td class="text-end">${pt.amountPay > 0 ? fmtNum(pt.amountPay) : '-'}</td>
+                <td class="text-end text-success">${pt.amountReceive > 0 ? fmtNum(pt.amountReceive) : '-'}</td>
+                <td class="text-end pe-2 ${netClass}">${netAmount >= 0 ? '+' : ''}${fmtNum(netAmount)}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table></div>
+            <div class="mt-4 text-center">
+                <button class="btn btn-success btn-lg w-100 rounded-pill shadow fw-800 py-3" 
+                        onclick="confirmDraw(${tontineId}, ${data.winningShareId}, ${data.bidAmount}, '${data.winnerPlayerName.replace(/'/g, "\\'")}', ${data.totalReceived}, ${data.oldDebtDeduction}, ${data.otherDeduction}, '${(data.otherDeductionNote || '').replace(/'/g, "\\'")}', ${data.totalReceived - data.otherDeduction})">
+                    ✅ CHỐT KỲ KHUI NÀY
+                </button>
+            </div>
+        </div>`;
+
+        document.getElementById('previewPanel').innerHTML = html;
+        document.getElementById('previewPanel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function confirmDraw(tontineId, shareId, bid, winner, total, oldDebt, otherDed, otherDedNote, final) {
+        document.getElementById('execTontineId').value = tontineId;
+        document.getElementById('execShareId').value = shareId;
+        document.getElementById('execBidAmount').value = bid;
+        document.getElementById('execOtherDeduction').value = otherDed;
+        document.getElementById('execOtherDeductionNote').value = otherDedNote;
+        
+        const dateVal = document.getElementById('drawDateInput').value;
+        const now = new Date();
+        const drawDate = dateVal ? new Date(dateVal + 'T' + now.toTimeString().split(' ')[0]) : now;
+        document.getElementById('execDrawDate').value = drawDate.toISOString();
+        
+        document.getElementById('confirmBody').innerHTML = `
+            <div class="text-center mb-4">
+                <i class="bi bi-question-circle font-primary" style="font-size: 4rem; color: #10b981;"></i>
+                <h4 class="fw-800">Xác nhận giao hụi?</h4>
+                <p class="text-secondary">Vui lòng kiểm tra kỹ hụi viên hốt và tiền thăm trước khi chốt. Thao tác không thể hoàn tác.</p>
+            </div>
+            <div class="p-3 bg-light rounded-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Hụi viên nhận:</span>
+                    <strong class="text-primary">${winner}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tiền thăm đặt:</span>
+                    <strong class="text-warning">${fmtNum(bid)} đ</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tổng tiền hốt:</span>
+                    <strong class="text-secondary">${fmtNum(total)} đ</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2 text-danger">
+                    <span>Trừ nợ cũ:</span>
+                    <strong>-${fmtNum(oldDebt)} đ</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2 text-danger">
+                    <span>Trừ khác ${otherDedNote ? `<small class="italic">(${otherDedNote})</small>` : ''}:</span>
+                    <strong>-${fmtNum(otherDed)} đ</strong>
+                </div>
+                <div class="d-flex justify-content-between fs-5 pt-2 border-top">
+                    <span>THỰC GIAO (Còn lại):</span>
+                    <strong class="text-success">${fmtNum(final)} đ</strong>
+                </div>
+            </div>`;
+            
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+
+    function toggleDeductionInputs() {
+        const isEnabled = document.getElementById('enableOtherDeduction').checked;
+        const area = document.getElementById('deductionInputsArea');
+        if (isEnabled) {
+            area.style.opacity = '1';
+            area.style.pointerEvents = 'auto';
+        } else {
+            area.style.opacity = '0.4';
+            area.style.pointerEvents = 'none';
+        }
+    }
+
+    function fmtNum(n) {
+        return Math.round(n).toLocaleString('vi-VN');
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+}

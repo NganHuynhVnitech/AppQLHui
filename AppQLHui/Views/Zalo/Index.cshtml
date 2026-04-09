@@ -1,0 +1,112 @@
+@model AppQLHui.Models.ZaloSettings
+@{
+    ViewData["Title"] = "Cấu Hình Zalo Auto";
+}
+
+<div class="animate-fade-in row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="d-flex align-items-center gap-3 mb-5">
+            <div class="bg-primary p-3 rounded-4 shadow-sm text-white">
+                <i class="bi bi-chat-dots-fill fs-3"></i>
+            </div>
+            <div>
+                <h1 class="fw-800 mb-0 h2">Gửi Bill Zalo Tự Động</h1>
+                <p class="text-secondary mb-0">Cấu hình tham số cho module tự động hóa</p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-lg p-0" style="border-radius: 24px; overflow: hidden;">
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Update" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="row g-4">
+                        <!-- SECTION 1: TIMING -->
+                        <div class="col-12 pb-2 border-bottom">
+                            <h5 class="fw-700 text-primary mb-1"><i class="bi bi-clock-history me-2"></i>Thông số thời gian</h5>
+                            <small class="text-muted">Điều chỉnh tốc độ gửi tự động</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="SendDelayMs" class="form-label fw-bold small text-uppercase">Độ trễ sau mỗi lượt (ms)</label>
+                            <input asp-for="SendDelayMs" class="form-control form-control-lg border-0 bg-light rounded-3" type="number" step="100" />
+                            <small class="text-muted opacity-75">Gợi ý: 1000ms - 2000ms</small>
+                        </div>
+
+                        <!-- SECTION 2: COORDINATES -->
+                        <div class="col-12 pt-4 pb-2 border-bottom">
+                            <h5 class="fw-700 text-primary mb-1"><i class="bi bi-crosshair me-2"></i>Tọa độ vị trí</h5>
+                            <small class="text-muted">Tọa độ chuột trên màn hình desktop</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="PasteX" class="form-label fw-bold small text-uppercase">Tọa độ dán (X)</label>
+                            <input asp-for="PasteX" class="form-control form-control-lg border-0 bg-light rounded-3" type="number" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="PasteY" class="form-label fw-bold small text-uppercase">Tọa độ dán (Y)</label>
+                            <input asp-for="PasteY" class="form-control form-control-lg border-0 bg-light rounded-3" type="number" />
+                        </div>
+
+                        <!-- SECTION 3: KEYBOARD SHORTCUTS -->
+                        <div class="col-12 pt-4 pb-2 border-bottom">
+                            <h5 class="fw-700 text-primary mb-1"><i class="bi bi-keyboard me-2"></i>Phím tắt thao tác</h5>
+                            <small class="text-muted">Sử dụng quy chuẩn phím tắt hệ thống</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="PasteShortcut" class="form-label fw-bold small text-uppercase">Phím dán</label>
+                            <input asp-for="PasteShortcut" class="form-control form-control-lg border-0 bg-light rounded-3" placeholder="Ctrl+V" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="SendShortcut" class="form-label fw-bold small text-uppercase">Phím gửi</label>
+                            <input asp-for="SendShortcut" class="form-control form-control-lg border-0 bg-light rounded-3" placeholder="Enter" />
+                        </div>
+
+                        <!-- SECTION 4: TOGGLES -->
+                        <div class="col-12 pt-4 pb-3">
+                            <div class="p-3 bg-light rounded-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="IsSingleSendOnly">
+                                    <label class="form-check-label fw-bold ms-2" asp-for="IsSingleSendOnly">Gửi theo nhóm (Mặc định ON)</label>
+                                    <div class="small text-muted ms-4">Chỉ gửi cho một người nếu tắt tính năng này.</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" asp-for="AutoCopyBill">
+                                    <label class="form-check-label fw-bold ms-2" asp-for="AutoCopyBill">Tự động Copy Bill khi in</label>
+                                    <div class="small text-muted ms-4">Bill sẽ được copy vào Clipboard ngay khi nhấn nút IN.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <button type="submit" class="btn btn-premium btn-lg btn-success px-5 rounded-pill shadow fw-800 py-3">
+                            LƯU CẤU HÌNH <i class="bi bi-shield-check ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card-footer bg-light border-0 py-3 text-center opacity-75">
+                <small>Cập nhật lần cuối: <strong>@Model.LastUpdated.ToString("G")</strong></small>
+            </div>
+        </div>
+        
+        <div class="alert alert-info border-0 shadow-sm mt-4 p-4 rounded-4 animate-fade-in" style="animation-delay: 0.2s;">
+            <div class="d-flex gap-3">
+                <i class="bi bi-info-circle-fill fs-3 text-info"></i>
+                <div>
+                    <h6 class="fw-bold">Lưu ý khi cấu hình:</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Tọa độ X, Y:</strong> Có thể lấy từ phần mềm AutoHotkey hoặc chụp ảnh màn hình để xác định điểm dán chuẩn.</li>
+                        <li><strong>Độ trễ:</strong> Tùy vào tốc độ mạng, không nên đặt quá thấp (<500ms) để tránh lỗi dán đè.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

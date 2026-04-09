@@ -1,0 +1,18 @@
+## .NET
+*.user
+*.suo
+.vs/
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+publish/
+AppQLHui/wwwroot/lib/
+
+## Node
+node_modules/
+
+## OS
+.DS_Store
+Thumbs.db

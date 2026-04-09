@@ -1,0 +1,95 @@
+@model IEnumerable<AppQLHui.Models.Transaction>
+@{
+    ViewData["Title"] = "Lịch Sử Thành Viên";
+    var player = (AppQLHui.Models.Player)ViewBag.Player;
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-800 mb-0">📜 Lịch Sử Giao Dịch</h2>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="text-secondary">Thành viên: <strong class="text-primary">@player.Name</strong> | SĐT: @player.Phone</span>
+                @if (!string.IsNullOrEmpty(player.Phone))
+                {
+                    <button onclick="copyAndOpenZalo('@player.Phone')" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-none border-0" style="background-color: #eff6ff;" title="Copy & Mở Zalo">
+                        <i class="bi bi-chat-dots-fill me-1"></i> Mở Zalo
+                    </button>
+                }
+            </div>
+        </div>
+        <a asp-action="Index" class="btn btn-light rounded-pill px-4 shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại sổ hụi
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card-premium h-100">
+                <div class="stat-label uppercase">TỔNG ĐÓNG</div>
+                <div class="stat-value text-danger">@Model.Sum(t => t.AmountPay).ToString("N0")</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card-premium success h-100">
+                <div class="stat-label uppercase">TỔNG NHẬN</div>
+                <div class="stat-value text-success">@Model.Sum(t => t.AmountReceive).ToString("N0")</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card stat-card-premium info h-100">
+                <div class="stat-label uppercase">SỐ DƯ HIỆN TẠI (NET)</div>
+                <div class="stat-value @(Model.Sum(t => t.NetTotal) >= 0 ? "text-success" : "text-danger")">
+                    @(Model.Sum(t => t.NetTotal) >= 0 ? "+" : "")@Model.Sum(t => t.NetTotal).ToString("N0") <small>đ</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-list-stars me-2 text-primary"></i>Chi tiết các kỳ tham gia</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4">Ngày khui</th>
+                            <th>Dây hụi / Kỳ</th>
+                            <th class="text-end">Đóng</th>
+                            <th class="text-end">Nhận</th>
+                            <th class="text-end">Thực thu (Net)</th>
+                            <th class="text-center">TT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tx in Model.OrderByDescending(t => t.Draw.DrawDate))
+                        {
+                            var isWinning = tx.AmountReceive > 0;
+                            <tr>
+                                <td class="ps-4">@tx.Draw.DrawDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <div class="fw-bold">@tx.Draw.Tontine.Name</div>
+                                    <small class="text-muted">Kỳ hốt #@tx.Draw.SequenceNumber</small>
+                                </td>
+                                <td class="text-end">@(tx.AmountPay > 0 ? tx.AmountPay.ToString("N0") : "-")</td>
+                                <td class="text-end text-success fw-bold">@(tx.AmountReceive > 0 ? tx.AmountReceive.ToString("N0") : "-")</td>
+                                <td class="text-end fw-bold @(tx.NetTotal >= 0 ? "text-success" : "text-danger")">
+                                    @(tx.NetTotal >= 0 ? "+" : "")@tx.NetTotal.ToString("N0") đ
+                                </td>
+                                <td class="text-center">
+                                    @if(tx.IsSettled) {
+                                        <i class="bi bi-check-circle-fill text-success" title="Đã thanh toán"></i>
+                                    } else {
+                                        <i class="bi bi-clock-history text-warning" title="Chưa thanh toán"></i>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

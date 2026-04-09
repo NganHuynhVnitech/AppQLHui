@@ -1,0 +1,99 @@
+@model IEnumerable<AppQLHui.DTOs.PlayerNetBalanceDto>
+@{
+    ViewData["Title"] = "Sổ Hụi Tổng Hợp";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-800 mb-0">📈 Sổ Hụi Tổng Hợp</h2>
+            <p class="text-secondary">Trạng thái Âm/Dương của tất cả hụi viên</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-light rounded-pill px-4 shadow-sm no-print">
+            <i class="bi bi-printer me-1"></i> In Báo Cáo
+        </button>
+    </div>
+
+    <!-- STATS OVERVIEW -->
+    <div class="row g-4 mb-4 no-print">
+        <div class="col-md-4">
+            <div class="card stat-card-premium h-100">
+                <div class="stat-label uppercase">TỔNG DƯƠNG (CÒN NỢ)</div>
+                <div class="stat-value text-success">
+                    @Model.Where(m => m.NetBalance > 0).Sum(m => m.NetBalance).ToString("N0") <small>đ</small>
+                </div>
+                <div class="mt-1 small text-muted">Số tiền hụi viên đang nộp vào</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card-premium danger h-100">
+                <div class="stat-label uppercase">TỔNG ÂM (ĐÃ RÚT)</div>
+                <div class="stat-value text-danger">
+                    @Math.Abs(Model.Where(m => m.NetBalance < 0).Sum(m => m.NetBalance)).ToString("N0") <small>đ</small>
+                </div>
+                <div class="mt-1 small text-muted">Số tiền đã giao cho hụi viên hốt</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card-premium info h-100">
+                <div class="stat-label uppercase">HỘI VIÊN ĐANG CHƠI</div>
+                <div class="stat-value text-info">@Model.Count()</div>
+                <div class="mt-1 small text-muted">Tổng số thành viên tham gia</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th class="ps-4 py-3">Hụi viên</th>
+                            <th class="text-end">Hụi Sống (Chưa hốt)</th>
+                            <th class="text-end">Hụi Chết (Đã hốt)</th>
+                            <th class="text-end">Thảo đã nộp</th>
+                            <th class="text-center">Âm / Dương</th>
+                            <th class="text-end pe-4 no-print">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model)
+                        {
+                            var isPositive = b.NetBalance >= 0;
+                            var netClass = isPositive ? "text-success fw-bold" : "text-danger fw-bold";
+                            var balanceTag = isPositive ? "bg-success-subtle text-success border-success-subtle" : "bg-danger-subtle text-danger border-danger-subtle";
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold">@b.PlayerName</div>
+                                    <small class="text-muted">@b.Phone</small>
+                                </td>
+                                <td class="text-end fw-bold">@b.TotalLivingAmount.ToString("N0") đ</td>
+                                <td class="text-end text-secondary">@b.TotalDeadAmount.ToString("N0") đ</td>
+                                <td class="text-end small opacity-75">@b.TotalFeesPaid.ToString("N0") đ</td>
+                                <td class="text-center">
+                                    <span class="badge @balanceTag border py-2 px-3 rounded-pill" style="min-width: 120px;">
+                                        @(isPositive ? "+" : "")@b.NetBalance.ToString("N0") đ
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4 no-print">
+                                    <a asp-action="PlayerHistory" asp-route-playerId="@b.PlayerId" 
+                                       class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        Chi tiết <i class="bi bi-chevron-right small"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-subtle { background-color: #ecfdf5; }
+    .bg-danger-subtle { background-color: #fef2f2; }
+    .border-success-subtle { border-color: #d1fae5 !important; }
+    .border-danger-subtle { border-color: #fee2e2 !important; }
+</style>

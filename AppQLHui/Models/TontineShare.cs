@@ -1,0 +1,33 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+
+namespace AppQLHui.Models
+{
+    public enum ShareStatus { Living, Dead }
+
+    public class TontineShare
+    {
+        public int Id { get; set; }
+
+        public int TontineId { get; set; }
+        [ValidateNever]
+        public Tontine Tontine { get; set; } = null!;
+
+        [Display(Name = "Số thứ tự")]
+        public int Position { get; set; }
+
+        public int PlayerId { get; set; }
+        [ValidateNever]
+        public Player Player { get; set; } = null!;
+
+        [Display(Name = "Trạng thái phần")]
+        public ShareStatus Status { get; set; } = ShareStatus.Living;
+
+        /// <summary>Kỳ draw mà phần này đã hốt (null nếu chưa hốt)</summary>
+        public int? WonDrawId { get; set; }
+        [ValidateNever]
+        public Draw? WonDraw { get; set; }
+
+        public bool IsSettledEarly { get; set; } = false;
+    }
+}

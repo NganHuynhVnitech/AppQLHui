@@ -1,0 +1,269 @@
+@model AppQLHui.Models.Tontine
+@{
+    ViewData["Title"] = "Thêm Dây Hụi";
+}
+
+<div class="animate-fade-in row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-800 mb-0">🆕 Tạo Dây Hụi Mới</h2>
+                <p class="text-secondary">Thiết lập thông số cơ bản cho chu kỳ hụi mới</p>
+            </div>
+            <a asp-action="Index" class="btn btn-light rounded-pill px-4 shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+
+        <div class="card shadow-lg border-0" style="border-radius: 24px;">
+            <div class="card-body p-4 p-md-5">
+                <form asp-action="Create" method="post" id="tontineCreateForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm" style="display:none"></div>
+                    
+                    <div class="row g-4">
+                        <!-- Tên dây -->
+                        <div class="col-md-8">
+                            <label asp-for="Name" class="form-label fw-bold text-secondary small text-uppercase">Tên dây hụi (Mô tả)</label>
+                            <input asp-for="Name" class="form-control form-control-lg border-0 bg-light px-3" 
+                                   placeholder="VD: Ngày 1 triệu - 10 phần" style="font-weight: 600;" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Chu kỳ hụi -->
+                        <div class="col-md-4">
+                            <label asp-for="CycleType" class="form-label fw-bold text-secondary small text-uppercase">Chu kỳ khui</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-primary"><i class="bi bi-calendar-range"></i></span>
+                                <input asp-for="CycleType" id="cycleTypeInput" class="form-control border-0 px-3 bg-white" 
+                                       readonly style="font-weight: 700; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#cycleModal" />
+                            </div>
+                            <span asp-validation-for="CycleType" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Mệnh giá -->
+                        <div class="col-md-4">
+                            <label asp-for="BaseAmount" class="form-label fw-bold text-secondary small text-uppercase">Mệnh giá (M)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-success">đ</span>
+                                <input asp-for="BaseAmount" class="form-control border-0 px-3" type="number" 
+                                       placeholder="1,000,000" style="font-weight: 700;" />
+                            </div>
+                            <span asp-validation-for="BaseAmount" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Số phần -->
+                        <div class="col-md-4">
+                            <label asp-for="TotalShares" class="form-label fw-bold text-secondary small text-uppercase">Số phần (N)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-primary">#</span>
+                                <input asp-for="TotalShares" class="form-control border-0 px-3" type="number" 
+                                       placeholder="12" style="font-weight: 700;" />
+                            </div>
+                            <span asp-validation-for="TotalShares" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Tiền thảo -->
+                        <div class="col-md-4">
+                            <label asp-for="CommissionFee" class="form-label fw-bold text-secondary small text-uppercase">Tiền thảo (F)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-white text-danger">đ</span>
+                                <input asp-for="CommissionFee" class="form-control border-0 px-3" type="number" 
+                                       placeholder="100,000" style="font-weight: 700;" />
+                            </div>
+                            <span asp-validation-for="CommissionFee" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Cách thu thảo -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-secondary small text-uppercase mb-3">Cách thức thu tiền thảo</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check custom-radio-card p-3 rounded-4 border h-100 cursor-pointer shadow-sm transition-all" onclick="selectFeeType('Before')">
+                                        <input class="form-check-input d-none" type="radio" name="FeeType" id="feeBefore" value="Before">
+                                        <label class="form-check-label w-100 cursor-pointer" for="feeBefore">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <i class="bi bi-dash-circle-fill text-danger fs-5"></i>
+                                                <div class="fw-bold fs-6">Thảo thu trước</div>
+                                            </div>
+                                            <div class="small text-muted opacity-75">Trừ trực tiếp vào tiền hốt của người trúng ngay lúc giao.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check custom-radio-card p-3 rounded-4 border h-100 cursor-pointer shadow-sm transition-all active" onclick="selectFeeType('After')">
+                                        <input class="form-check-input d-none" type="radio" name="FeeType" id="feeAfter" value="After" checked>
+                                        <label class="form-check-label w-100 cursor-pointer" for="feeAfter">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <i class="bi bi-plus-circle-fill text-success fs-5"></i>
+                                                <div class="fw-bold fs-6">Thảo thu sau</div>
+                                            </div>
+                                            <div class="small text-muted opacity-75">Thu sau khi đã giao đủ hụi. (Phổ biến nhất)</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 text-center">
+                        <button type="submit" class="btn btn-lg btn-success rounded-pill px-5 py-3 shadow fw-800">
+                            TIẾP TỤC: PHÂN CHIA PHẦN HỤI <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chu Kỳ Khui -->
+<div class="modal fade" id="cycleModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 12px; background: #f0f2f5;">
+            <div class="modal-header bg-primary text-white" style="border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title fw-bold">CÀI ĐẶT CHU KỲ KHUI</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-2">
+                    <!-- Column 1 (Red) -->
+                    <div class="col-md-3 cycle-group">
+                        <button type="button" class="btn btn-cycle btn-danger fw-bold text-white w-100 mb-2">Ngày</button>
+                        <button type="button" class="btn btn-cycle btn-danger fw-bold text-white w-100 mb-2">Tuần</button>
+                        <button type="button" class="btn btn-cycle btn-danger fw-bold text-white w-100 mb-2">Tháng</button>
+                        @for (int i = 2; i <= 8; i++) {
+                            <button type="button" class="btn btn-cycle btn-light text-danger fw-bold w-100 mb-2 border shadow-sm">@i Ngày</button>
+                        }
+                    </div>
+                    
+                    <!-- Column 2 (Dark Red text) -->
+                    <div class="col-md-3 cycle-group">
+                        @for (int i = 9; i <= 18; i++) {
+                            <button type="button" class="btn btn-cycle btn-light fw-bold w-100 mb-2 border shadow-sm" style="color: #8b0000;">@i Ngày</button>
+                        }
+                    </div>
+                    
+                    <!-- Column 3 (Black text) -->
+                    <div class="col-md-3 cycle-group">
+                        @for (int i = 19; i <= 28; i++) {
+                            <button type="button" class="btn btn-cycle btn-light text-dark fw-bold w-100 mb-2 border shadow-sm">@i Ngày</button>
+                        }
+                    </div>
+                    
+                    <!-- Column 4 (Special / Green / Purple) -->
+                    <div class="col-md-3 cycle-group">
+                        <button type="button" class="btn btn-cycle btn-light text-success fw-bold w-100 mb-2 border shadow-sm">Ngày khui 2 lần</button>
+                        <button type="button" class="btn btn-cycle btn-light text-success fw-bold w-100 mb-2 border shadow-sm">Ngày khui 3 lần</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 3,5,7</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 4,6, CN</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 2,6</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Thứ 4,7</button>
+                        <button type="button" class="btn btn-cycle btn-light text-purple fw-bold w-100 mb-2 border shadow-sm">Tùy chọn Thứ...</button>
+                        <button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 mb-2 border shadow-sm">10 Ngày (3,13,23)</button>
+                        <button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 mb-2 border shadow-sm">14 Ngày (9,23)</button>
+                        <button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 mb-2 border shadow-sm">15 Ngày (8,23)</button>
+                    </div>
+                </div>
+
+                <!-- Months row -->
+                <div class="row g-2 mt-2">
+                    <div class="col-3"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">2 THÁNG</button></div>
+                    <div class="col-3"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">3 THÁNG</button></div>
+                    <div class="col-2"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">4 THÁNG</button></div>
+                    <div class="col-2"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">5 THÁNG</button></div>
+                    <div class="col-2"><button type="button" class="btn btn-cycle btn-light text-primary fw-bold w-100 border shadow-sm">6 THÁNG</button></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light d-flex justify-content-between align-items-center" style="border-radius: 0 0 12px 12px;">
+                <div class="d-flex align-items-center gap-3 w-75">
+                    <span class="fw-bold text-nowrap">Tùy chọn ngày :</span>
+                    <input type="text" id="customDaysInput" class="form-control" placeholder="Ví dụ: 5,10,15,25,30">
+                </div>
+                <button type="button" class="btn btn-success fw-bold px-4" id="btnAcceptCustom">ĐỒNG Ý</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+        --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .card { border-radius: 24px; transition: transform 0.3s ease; }
+    .custom-radio-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #ffffff; border: 2px solid #f1f5f9; }
+    .custom-radio-card:hover { border-color: #3b82f6; background: #f8fafc; transform: translateY(-2px); }
+    .custom-radio-card.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1) !important; }
+    .custom-radio-card.active .fw-bold { color: #2563eb; }
+    
+    .input-group { transition: all 0.2s; }
+    .input-group:focus-within { transform: scale(1.02); }
+    
+    .btn-cycle { border-radius: 12px; transition: all 0.2s; font-size: 0.9rem; padding: 12px 10px; }
+    .btn-cycle:hover { transform: scale(1.05); filter: brightness(0.95); }
+    
+    .fw-800 { font-weight: 800; }
+    .cursor-pointer { cursor: pointer; }
+    .transition-all { transition: all 0.3s ease; }
+</style>
+
+@section Scripts { 
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        function selectFeeType(val) {
+            document.querySelectorAll('.custom-radio-card').forEach(c => c.classList.remove('active'));
+            const input = document.getElementById(val === 'Before' ? 'feeBefore' : 'feeAfter');
+            input.checked = true;
+            input.closest('.custom-radio-card').classList.add('active');
+        }
+
+        // Real-time Number Formatting for Premium Feel
+        function formatNumberInput(input) {
+            let val = input.value.replace(/\D/g, "");
+            if (val === "") return;
+            input.value = parseInt(val).toLocaleString('vi-VN');
+        }
+
+        // We need to un-format before submit
+        document.getElementById('tontineCreateForm').addEventListener('submit', function(e) {
+            const baseAmount = document.querySelector('input[name="BaseAmount"]');
+            const commission = document.querySelector('input[name="CommissionFee"]');
+            baseAmount.value = baseAmount.value.replace(/\D/g, "");
+            commission.value = commission.value.replace(/\D/g, "");
+        });
+
+        // Event listeners for formatting
+        const baseInput = document.querySelector('input[name="BaseAmount"]');
+        const commInput = document.querySelector('input[name="CommissionFee"]');
+
+        [baseInput, commInput].forEach(el => {
+            // Change type to text for formatting
+            el.type = "text"; 
+            el.addEventListener('input', function() { formatNumberInput(this); });
+            // Initial format
+            if (el.value) formatNumberInput(el);
+        });
+
+        // Cycle Modal Logic
+        const cycleTypeInput = document.getElementById('cycleTypeInput');
+        const customDaysInput = document.getElementById('customDaysInput');
+        const cycleModal = new bootstrap.Modal(document.getElementById('cycleModal'));
+
+        document.querySelectorAll('.btn-cycle').forEach(btn => {
+            btn.addEventListener('click', function() {
+                cycleTypeInput.value = this.innerText.trim();
+                cycleModal.hide();
+                // Add a small bounce effect to indicate selection
+                cycleTypeInput.parentElement.classList.add('animate-bounce-in');
+                setTimeout(() => cycleTypeInput.parentElement.classList.remove('animate-bounce-in'), 500);
+            });
+        });
+
+        document.getElementById('btnAcceptCustom').addEventListener('click', function() {
+            if (customDaysInput.value.trim() !== "") {
+                cycleTypeInput.value = customDaysInput.value.trim();
+            }
+            cycleModal.hide();
+        });
+    </script>
+}
