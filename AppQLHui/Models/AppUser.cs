@@ -19,6 +19,9 @@ namespace AppQLHui.Models
 
         public UserRole Role { get; set; } = UserRole.Owner;
 
+        [MaxLength(30)]
+        public string? Phone { get; set; }
+
         [MaxLength(100)]
         public string? BankName { get; set; }
 

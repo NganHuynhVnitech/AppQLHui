@@ -8,7 +8,7 @@ namespace AppQLHui.Models
 {
     public enum TontineType { Day, Week, Month }
     public enum FeeType { Before, After } // Thảo thu trước / Thảo thu sau
-    public enum TontineStatus { Draft, Running, Completed }
+    public enum TontineStatus { Draft, Running, Completed, Disabled }
 
     public class Tontine
     {

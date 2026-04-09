@@ -26,7 +26,9 @@ namespace AppQLHui.DTOs
 
         // Professional Deductions
         public decimal OldDebtDeduction { get; set; }
-        public decimal FinalReceived => TotalReceived - OldDebtDeduction;
+        public decimal OtherDeduction { get; set; }
+        public string? OtherDeductionNote { get; set; }
+        public decimal FinalReceived => TotalReceived - OldDebtDeduction - OtherDeduction;
 
         public List<PlayerTransactionDto> PlayerTransactions { get; set; } = new();
     }
@@ -53,7 +55,9 @@ namespace AppQLHui.DTOs
         public decimal NetTotal { get; set; }
 
         public decimal OldDebtDeduction { get; set; }
-        public decimal FinalTotal => NetTotal - OldDebtDeduction;
+        public decimal OtherDeduction { get; set; }
+        public string? OtherDeductionNote { get; set; }
+        public decimal FinalTotal => NetTotal - OldDebtDeduction - OtherDeduction;
 
         public bool IsWinner { get; set; }
     }

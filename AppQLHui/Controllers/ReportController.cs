@@ -76,7 +76,7 @@ namespace AppQLHui.Controllers
         public async Task<IActionResult> WinnerBill(int drawId)
         {
             var draw = await _db.Draws
-                .Include(d => d.Tontine)
+                .Include(d => d.Tontine).ThenInclude(t => t.Owner)
                 .Include(d => d.WinningShare).ThenInclude(ws => ws!.Player)
                 .Include(d => d.Transactions).ThenInclude(t => t.Player)
                 .FirstOrDefaultAsync(d => d.Id == drawId);
@@ -117,6 +117,35 @@ namespace AppQLHui.Controllers
                 return Json(new { success = result.success, message = result.message });
             }
             catch(Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkSettle(int[] transactionIds)
+        {
+            try
+            {
+                if (transactionIds == null || transactionIds.Length == 0)
+                    return Json(new { success = false, message = "Không có hụi viên nào được chọn." });
+
+                int count = 0;
+                foreach (var txId in transactionIds)
+                {
+                    // For bulk settle, we fetch the transaction to get the remaining balance
+                    var tx = await _db.Transactions.FindAsync(txId);
+                    if (tx != null && !tx.IsSettled)
+                    {
+                        decimal remain = Math.Abs(tx.NetTotal) - tx.PaidAmount;
+                        await _reportService.SettleTransactionAsync(txId, remain);
+                        count++;
+                    }
+                }
+
+                return Json(new { success = true, message = $"Đã thu tiền thành công cho {count} hụi viên." });
+            }
+            catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
             }

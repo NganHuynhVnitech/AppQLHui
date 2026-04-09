@@ -19,12 +19,25 @@ namespace AppQLHui.Controllers
             _drawService = drawService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? filter)
         {
-            var tontines = await _db.Tontines
-                .Include(t => t.Shares)
+            filter ??= "enable";
+            var query = _db.Tontines.Include(t => t.Shares).AsQueryable();
+
+            if (filter == "enable")
+            {
+                query = query.Where(t => t.Status == TontineStatus.Draft || t.Status == TontineStatus.Running);
+            }
+            else if (filter == "disable")
+            {
+                query = query.Where(t => t.Status == TontineStatus.Completed || t.Status == TontineStatus.Disabled);
+            }
+
+            var tontines = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
+
+            ViewBag.StatusFilter = filter;
             return View(tontines);
         }
 
@@ -50,7 +63,7 @@ namespace AppQLHui.Controllers
         public async Task<IActionResult> SetupShares(int id)
         {
             var tontine = await _db.Tontines
-                .Include(t => t.Shares)
+                .Include(t => t.Shares).ThenInclude(s => s.Player)
                 .FirstOrDefaultAsync(t => t.Id == id);
             if (tontine == null) return NotFound();
 
@@ -89,6 +102,51 @@ namespace AppQLHui.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
+                return RedirectToAction("SetupShares", new { id });
+            }
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveDraft(int id, IFormCollection form)
+        {
+            try
+            {
+                var tontine = await _db.Tontines
+                    .Include(t => t.Shares)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+                if (tontine == null) return NotFound();
+
+                if (tontine.Status != TontineStatus.Draft)
+                {
+                    TempData["Error"] = "Chỉ có thể lưu nháp cho dây hụi chưa bắt đầu.";
+                    return RedirectToAction("SetupShares", new { id });
+                }
+
+                // Xóa các phần hụi cũ để cập nhật lại từ đầu
+                _db.TontineShares.RemoveRange(tontine.Shares);
+
+                for (int i = 1; i <= tontine.TotalShares; i++)
+                {
+                    string key = $"player_{i}";
+                    if (form.ContainsKey(key) && int.TryParse(form[key], out int playerId) && playerId > 0)
+                    {
+                        _db.TontineShares.Add(new TontineShare
+                        {
+                            TontineId = id,
+                            Position = i,
+                            PlayerId = playerId,
+                            Status = ShareStatus.Living
+                        });
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+                TempData["Success"] = "Đã lưu bản nháp vị trí hụi viên.";
+                return RedirectToAction("SetupShares", new { id });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Lỗi khi lưu nháp: " + ex.Message;
                 return RedirectToAction("SetupShares", new { id });
             }
         }
@@ -159,6 +217,34 @@ namespace AppQLHui.Controllers
             _db.Update(tontine);
             await _db.SaveChangesAsync();
             TempData["Success"] = "Cập nhật dây hụi thành công!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleLock(int id)
+        {
+            var tontine = await _db.Tontines
+                .Include(t => t.Shares)
+                .FirstOrDefaultAsync(t => t.Id == id);
+            if (tontine == null) return NotFound();
+
+            if (tontine.Status == TontineStatus.Disabled)
+            {
+                // Mở khóa: Nếu đã có phần hụi thì quay lại Running, chưa có thì Draft
+                tontine.Status = tontine.Shares.Any() ? TontineStatus.Running : TontineStatus.Draft;
+                TempData["Success"] = $"Đã mở khóa dây hụi \"{tontine.Name}\"!";
+            }
+            else if (tontine.Status == TontineStatus.Running || tontine.Status == TontineStatus.Draft)
+            {
+                tontine.Status = TontineStatus.Disabled;
+                TempData["Success"] = $"Đã khóa dây hụi \"{tontine.Name}\"!";
+            }
+            else
+            {
+                TempData["Error"] = "Không thể thay đổi trạng thái của dây hụi đã hoàn tất.";
+            }
+
+            await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
     }

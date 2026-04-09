@@ -1,10 +1,19 @@
 @model IEnumerable<AppQLHui.Models.Tontine>
 <div class="animate-fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-800 mb-0">📋 Quản Lý Dây Hụi</h2>
-        <a asp-action="Create" class="btn btn-gradient-success px-4 shadow-sm rounded-pill">
-            <i class="bi bi-plus-lg me-1"></i> Tạo Dây Hụi Mới
-        </a>
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="fw-800 mb-0">📋 Quản Lý Dây Hụi</h2>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+            <div class="btn-group shadow-sm rounded-pill overflow-hidden bg-white border">
+                <a asp-action="Index" asp-route-filter="" class="btn btn-sm @(string.IsNullOrEmpty(ViewBag.StatusFilter) ? "btn-primary text-white" : "btn-light") px-3">Tất cả</a>
+                <a asp-action="Index" asp-route-filter="enable" class="btn btn-sm @(ViewBag.StatusFilter == "enable" ? "btn-primary text-white" : "btn-light") px-3">Đang hoạt động</a>
+                <a asp-action="Index" asp-route-filter="disable" class="btn btn-sm @(ViewBag.StatusFilter == "disable" ? "btn-primary text-white" : "btn-light") px-3">Đã khóa/Hoàn tất</a>
+            </div>
+            <a asp-action="Create" class="btn btn-gradient-success px-4 shadow-sm rounded-pill">
+                <i class="bi bi-plus-lg me-1"></i> Tạo Dây Hụi Mới
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0">
@@ -27,7 +36,7 @@
                         {
                             <tr>
                                 <td colspan="7" class="text-center py-5 text-muted">
-                                    Chưa có dây hụi nào được tạo.
+                                    Chưa có dây hụi nào phù hợp với bộ lọc này.
                                 </td>
                             </tr>
                         }
@@ -39,11 +48,13 @@
                             var statusBadge = t.Status switch {
                                 AppQLHui.Models.TontineStatus.Running => "bg-success",
                                 AppQLHui.Models.TontineStatus.Completed => "bg-secondary",
+                                AppQLHui.Models.TontineStatus.Disabled => "bg-danger",
                                 _ => "bg-warning text-dark"
                             };
                             var statusText = t.Status switch {
                                 AppQLHui.Models.TontineStatus.Running => "Đang Chạy",
                                 AppQLHui.Models.TontineStatus.Completed => "Hoàn Tất",
+                                AppQLHui.Models.TontineStatus.Disabled => "Bị Khóa",
                                 _ => "Đang Chờ"
                             };
 
@@ -82,6 +93,15 @@
                                                class="btn btn-sm btn-warning px-3" title="Cài đặt phần hụi">
                                                 <i class="bi bi-person-plus"></i>
                                             </a>
+                                        }
+                                        @if (t.Status != AppQLHui.Models.TontineStatus.Completed)
+                                        {
+                                            <form asp-action="ToggleLock" asp-route-id="@t.Id" method="post" class="d-inline" 
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn @(t.Status == AppQLHui.Models.TontineStatus.Disabled ? "mở khóa" : "khóa") dây hụi này?')">
+                                                <button type="submit" class="btn btn-sm btn-light px-3" title="@(t.Status == AppQLHui.Models.TontineStatus.Disabled ? "Mở khóa" : "Khóa")">
+                                                    <i class="bi bi-lock@(t.Status == AppQLHui.Models.TontineStatus.Disabled ? "-fill text-danger" : "")"></i>
+                                                </button>
+                                            </form>
                                         }
                                     </div>
                                 </td>

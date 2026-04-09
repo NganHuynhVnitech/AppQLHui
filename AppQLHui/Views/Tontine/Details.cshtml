@@ -23,6 +23,8 @@
                         <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-play-circle-fill me-1"></i> ĐANG CHẠY</span>
                     } else if (Model.Status == AppQLHui.Models.TontineStatus.Completed) {
                         <span class="badge bg-dark rounded-pill px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> ĐÃ HOÀN TẤT</span>
+                    } else if (Model.Status == AppQLHui.Models.TontineStatus.Disabled) {
+                        <span class="badge bg-danger rounded-pill px-3 py-2"><i class="bi bi-lock-fill me-1"></i> BỊ KHÓA</span>
                     } else {
                         <span class="badge bg-secondary rounded-pill px-3 py-2"><i class="bi bi-pencil-fill me-1"></i> BẢN NHÁP</span>
                     }
@@ -44,6 +46,19 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" style="border-radius: 12px; min-width: 200px;">
                         <li><h6 class="dropdown-header small text-uppercase fw-bold">Quản trị dây hụi</h6></li>
                         <li><a class="dropdown-item rounded-3 py-2" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil-square me-2 text-primary"></i> Chỉnh sửa thông tin</a></li>
+                        @if (Model.Status != AppQLHui.Models.TontineStatus.Completed)
+                        {
+                            <li>
+                                <form asp-action="ToggleLock" asp-route-id="@Model.Id" method="post" id="lockForm">
+                                    @Html.AntiForgeryToken()
+                                    <button type="button" class="dropdown-item rounded-3 py-2 fw-bold @(Model.Status == AppQLHui.Models.TontineStatus.Disabled ? "text-success" : "text-warning")" 
+                                            onclick="confirmToggleLock()">
+                                        <i class="bi bi-lock@(Model.Status == AppQLHui.Models.TontineStatus.Disabled ? "-fill" : "") me-2"></i> 
+                                        @(Model.Status == AppQLHui.Models.TontineStatus.Disabled ? "Mở khóa dây hụi" : "Khóa dây hụi")
+                                    </button>
+                                </form>
+                            </li>
+                        }
                         <li><button class="dropdown-item rounded-3 py-2 text-danger fw-bold" onclick="confirmDeleteTontine(@Model.Id)"><i class="bi bi-trash3 me-2"></i> Xóa dây hụi</button></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><h6 class="dropdown-header small text-uppercase fw-bold">Báo cáo & In ấn</h6></li>
@@ -426,6 +441,23 @@
                     form.appendChild(csrf);
                     document.body.appendChild(form);
                     form.submit();
+                }
+            });
+        }
+
+        function confirmToggleLock() {
+            const isLocked = @(Model.Status == AppQLHui.Models.TontineStatus.Disabled ? "true" : "false");
+            Swal.fire({
+                title: isLocked ? 'Mở khóa dây hụi?' : 'Khóa dây hụi?',
+                text: isLocked ? "Dây hụi sẽ hoạt động trở lại bình thường." : "Dây hụi sẽ không thể khui hụi cho đến khi được mở khóa.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: isLocked ? '#10b981' : '#f59e0b',
+                confirmButtonText: isLocked ? '✅ Mở khóa' : '🔒 Khóa ngay',
+                cancelButtonText: 'Để sau'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('lockForm').submit();
                 }
             });
         }

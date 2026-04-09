@@ -40,8 +40,13 @@
                         <h5 class="mb-0 fw-bold text-primary">
                             <i class="bi bi-bookmark-fill me-2"></i>@tontine.TontineName
                         </h5>
-                        <div class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">
-                            Thuộc @tontine.UnpaidPlayers.Count người • Tổng: <span id="tontine-total-@tontine.TontineId">@Math.Round(tontine.TotalUnpaidAmount).ToString("N0")</span> đ
+                        <div class="d-flex align-items-center gap-3">
+                            <button id="btn-bulk-@tontine.TontineId" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold d-none" onclick="processBulk(@tontine.TontineId)">
+                                <i class="bi bi-check2-all me-1"></i> Thu tiền đã chọn
+                            </button>
+                            <div class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">
+                                Thuộc @tontine.UnpaidPlayers.Count người • Tổng: <span id="tontine-total-@tontine.TontineId">@Math.Round(tontine.TotalUnpaidAmount).ToString("N0")</span> đ
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -49,48 +54,62 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light text-secondary small text-uppercase">
                                     <tr>
-                                        <th class="ps-4 py-3">Hụi viên</th>
+                                        <th class="ps-4 py-3" style="width: 45px;">
+                                            <input type="checkbox" class="form-check-input border-secondary shadow-none" onchange="toggleTontineGroup(@tontine.TontineId, this)" title="Chọn tất cả">
+                                        </th>
+                                        <th>Hụi viên</th>
                                         <th>Kỳ trống</th>
                                         <th class="text-end text-muted">Tổng nợ</th>
                                         <th class="text-end">Cần đóng</th>
                                         <th class="text-end pe-4" style="width: 15%;">Thao tác</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="tontine-group-@tontine.TontineId">
                                     @foreach (var player in tontine.UnpaidPlayers)
                                     {
-                                        @foreach (var tx in player.Transactions)
-                                        {
-                                            <tr id="tx-row-@tx.TransactionId" class="align-middle">
-                                                <td class="ps-4 fw-bold text-dark">
-                                                    <i class="bi bi-person-circle text-muted me-2"></i>@player.PlayerName
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-light text-primary border border-primary-subtle px-3 py-2 shadow-sm" style="font-size: 0.85rem;">
-                                                        Kỳ @tx.SequenceNumber <span class="fw-normal opacity-75 ms-1">(@tx.DrawDate.ToString("dd/MM"))</span>
-                                                    </span>
-                                                </td>
-                                                <td class="text-end text-muted fw-bold">
-                                                    @if (tx.PaidAmount > 0)
+                                        var allTxIds = string.Join(",", player.Transactions.Select(t => t.TransactionId));
+                                        var totalDebt = player.Transactions.Sum(t => t.TotalDebtAmount);
+                                        var totalPaid = player.Transactions.Sum(t => t.PaidAmount);
+                                        var totalRemain = player.Transactions.Sum(t => t.RemainingAmount);
+                                        var cyclesText = string.Join(", ", player.Transactions.OrderBy(t => t.SequenceNumber).Select(t => "Kỳ " + t.SequenceNumber));
+
+                                        <tr class="align-middle">
+                                            <td class="ps-4">
+                                                <input type="checkbox" class="form-check-input border-secondary shadow-none tx-item-cb" value="@allTxIds" onchange="updateGroupUI(@tontine.TontineId)">
+                                            </td>
+                                            <td class="fw-bold text-dark">
+                                                <i class="bi bi-person-circle text-muted me-2"></i>@player.PlayerName
+                                            </td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @foreach (var tx in player.Transactions.OrderBy(t => t.SequenceNumber))
                                                     {
-                                                        <span class="small d-block text-decoration-line-through">@Math.Round(tx.TotalDebtAmount).ToString("N0")đ</span>
-                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1 mt-1">Đã góp @Math.Round(tx.PaidAmount).ToString("N0")đ</span>
+                                                        <span class="badge bg-light text-primary border border-primary-subtle px-3 py-2 shadow-sm" style="font-size: 0.85rem;" title="@tx.DrawDate.ToString("dd/MM/yyyy")">
+                                                            Kỳ @tx.SequenceNumber <span class="fw-normal opacity-75 ms-1">(@tx.DrawDate.ToString("dd/MM"))</span>
+                                                        </span>
                                                     }
-                                                    else
-                                                    {
-                                                        <span>@Math.Round(tx.TotalDebtAmount).ToString("N0") đ</span>
-                                                    }
-                                                </td>
-                                                <td class="text-end fw-900 text-danger" style="font-size: 1.1rem;" id="tx-remain-@tx.TransactionId">
-                                                    @Math.Round(tx.RemainingAmount).ToString("N0") đ
-                                                </td>
-                                                <td class="text-end pe-4">
-                                                    <button class="btn btn-sm btn-outline-success fw-bold rounded-pill shadow-sm px-3" onclick="promptSettle(@tx.TransactionId, @tx.RemainingAmount, '@player.PlayerName', @tx.SequenceNumber)">
-                                                        <i class="bi bi-cash-coin me-1"></i> Thu
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
+                                                </div>
+                                            </td>
+                                            <td class="text-end text-muted fw-bold">
+                                                @if (totalPaid > 0)
+                                                {
+                                                    <span class="small d-block text-decoration-line-through">@Math.Round(totalDebt).ToString("N0")đ</span>
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1 mt-1">Đã góp @Math.Round(totalPaid).ToString("N0")đ</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@Math.Round(totalDebt).ToString("N0") đ</span>
+                                                }
+                                            </td>
+                                            <td class="text-end fw-900 text-danger" style="font-size: 1.1rem;">
+                                                @Math.Round(totalRemain).ToString("N0") đ
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <button class="btn btn-sm btn-outline-success fw-bold rounded-pill shadow-sm px-3" onclick="promptSettleGroup('@allTxIds', @totalRemain, '@player.PlayerName.Replace("'", "\\'")', '@cyclesText')">
+                                                    <i class="bi bi-cash-coin me-1"></i> Thu
+                                                </button>
+                                            </td>
+                                        </tr>
                                     }
                                 </tbody>
                             </table>
@@ -104,37 +123,126 @@
 
 <style>
     .fw-900 { font-weight: 900; }
+    .tx-item-cb { width: 20px; height: 20px; cursor: pointer; }
+    .form-check-input:checked { background-color: #10b981; border-color: #10b981; }
 </style>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function promptSettle(txId, remainAmount, playerName, cycleNo) {
+        function toggleTontineGroup(tontineId, headerCb) {
+            const group = document.getElementById('tontine-group-' + tontineId);
+            const checkboxes = group.querySelectorAll('.tx-item-cb');
+            checkboxes.forEach(cb => {
+                cb.checked = headerCb.checked;
+            });
+            updateGroupUI(tontineId);
+        }
+
+        function updateGroupUI(tontineId) {
+            const group = document.getElementById('tontine-group-' + tontineId);
+            const checkedCount = group.querySelectorAll('.tx-item-cb:checked').length;
+            const btn = document.getElementById('btn-bulk-' + tontineId);
+            
+            if (checkedCount > 0) {
+                btn.classList.remove('d-none');
+                btn.innerText = `Thu tiền đã chọn (${checkedCount} người)`;
+            } else {
+                btn.classList.add('d-none');
+            }
+        }
+
+        function processBulk(tontineId) {
+            const group = document.getElementById('tontine-group-' + tontineId);
+            // Collect all transaction IDs from selected grouped checkboxes (some values might be "1,2,3")
+            const selectedIds = Array.from(group.querySelectorAll('.tx-item-cb:checked'))
+                                    .flatMap(cb => cb.value.split(','));
+            
             Swal.fire({
-                title: `Thu tiền: ${playerName}`,
-                html: `<div class="mb-3">Khoản nợ của <strong>Kỳ ${cycleNo}</strong></div>
-                       <p class="text-secondary small">Bạn có thể sửa số tiền nếu hụi viên nộp thiếu (thanh toán từng phần).</p>`,
-                input: 'number',
-                inputLabel: 'Số tiền thực thu (VNĐ)',
-                inputValue: remainAmount,
+                title: 'Xác nhận thu hàng loạt?',
+                text: `Bạn đang thực hiện thu tiền nợ. Tất cả các kỳ hụi của những người đã chọn sẽ được ghi nhận là ĐÃ THU ĐỦ.`,
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#10b981',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '✅ Xác nhận thu',
-                cancelButtonText: 'Đóng',
-                inputValidator: (value) => {
-                    if (!value || value <= 0) {
-                        return 'Vui lòng nhập số tiền hợp lệ!';
-                    }
-                    if (value > remainAmount) {
-                        return 'Không thể đóng nhiều hơn số nợ còn lại!';
-                    }
-                }
+                confirmButtonText: '✅ Đúng, đã thu đủ',
+                cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    processSettlement(txId, parseFloat(result.value));
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    const params = new URLSearchParams();
+                    selectedIds.forEach(id => params.append('transactionIds', id));
+
+                    fetch('/Report/BulkSettle', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token
+                        },
+                        body: params.toString()
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success', 
+                                title: 'Thành công',
+                                text: res.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => window.location.reload());
+                        } else {
+                            Swal.fire('Lỗi', res.message, 'error');
+                        }
+                    });
                 }
             });
+        }
+
+        function promptSettleGroup(txIds, remainAmount, playerName, cyclesText) {
+            Swal.fire({
+                title: `Thu tiền: ${playerName}`,
+                html: `<div class="mb-3">Khoản nợ: <strong>${cyclesText}</strong></div>
+                       <div class="h4 fw-bold text-danger mb-3">Tổng cộng: ${fmtNum(remainAmount)} đ</div>
+                       <p class="text-secondary small">Xác nhận đã thu đủ số tiền này cho tất cả các kỳ nêu trên?</p>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: '✅ Xác nhận thu đủ',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    const params = new URLSearchParams();
+                    txIds.split(',').forEach(id => params.append('transactionIds', id));
+
+                    fetch('/Report/BulkSettle', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token
+                        },
+                        body: params.toString()
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success', 
+                                title: 'Thành công',
+                                text: res.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => window.location.reload());
+                        } else {
+                            Swal.fire('Lỗi', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function fmtNum(n) {
+            return Math.round(n).toLocaleString('vi-VN');
         }
 
         function processSettlement(txId, amount) {

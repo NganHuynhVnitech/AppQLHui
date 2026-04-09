@@ -24,7 +24,8 @@ namespace AppQLHui.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateUser(string username, string fullName, string password, UserRole role)
+        public async Task<IActionResult> CreateUser(string username, string fullName, string password, UserRole role, 
+            string? phone, string? bankName, string? bankAccountNumber, string? bankAccountName)
         {
             if (await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username))
             {
@@ -38,6 +39,10 @@ namespace AppQLHui.Controllers
                 FullName = fullName,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 Role = role,
+                Phone = phone,
+                BankName = bankName,
+                BankAccountNumber = bankAccountNumber,
+                BankAccountName = bankAccountName,
                 CreatedAt = DateTime.Now
             };
 
@@ -83,7 +88,8 @@ namespace AppQLHui.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditUser(int id, string fullName, UserRole role)
+        public async Task<IActionResult> EditUser(int id, string fullName, UserRole role,
+            string? phone, string? bankName, string? bankAccountNumber, string? bankAccountName)
         {
             var user = await _db.Users.FindAsync(id);
             if (user == null || user.Username == "admin")
@@ -94,6 +100,11 @@ namespace AppQLHui.Controllers
 
             user.FullName = fullName;
             user.Role = role;
+            user.Phone = phone;
+            user.BankName = bankName;
+            user.BankAccountNumber = bankAccountNumber;
+            user.BankAccountName = bankAccountName;
+            
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Cập nhật thông tin người dùng thành công!";

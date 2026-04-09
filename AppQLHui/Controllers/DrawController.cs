@@ -36,6 +36,7 @@ namespace AppQLHui.Controllers
             if (tontineId.HasValue)
             {
                 var tontine = await _db.Tontines
+                    .Include(t => t.Draws)
                     .Include(t => t.Shares).ThenInclude(s => s.Player)
                     .FirstOrDefaultAsync(t => t.Id == tontineId.Value);
                 ViewBag.SelectedTontine = tontine;
@@ -52,11 +53,11 @@ namespace AppQLHui.Controllers
 
         /// <summary>AJAX: Tính toán preview trước khi chốt</summary>
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Preview(int tontineId, int winningShareId, decimal bidAmount)
+        public async Task<IActionResult> Preview(int tontineId, int winningShareId, decimal bidAmount, decimal otherDeduction = 0, string? otherDeductionNote = null)
         {
             try
             {
-                var preview = await _tontineService.CalculateDrawPreviewAsync(tontineId, winningShareId, bidAmount);
+                var preview = await _tontineService.CalculateDrawPreviewAsync(tontineId, winningShareId, bidAmount, otherDeduction, otherDeductionNote);
                 return Json(new { success = true, data = preview });
             }
             catch (Exception ex)
@@ -67,11 +68,11 @@ namespace AppQLHui.Controllers
 
         /// <summary>Chốt kỳ khui hụi</summary>
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Execute(int tontineId, int winningShareId, decimal bidAmount, DateTime drawDate)
+        public async Task<IActionResult> Execute(int tontineId, int winningShareId, decimal bidAmount, DateTime drawDate, decimal otherDeduction = 0, string? otherDeductionNote = null)
         {
             try
             {
-                var draw = await _drawService.ExecuteDrawAsync(tontineId, winningShareId, bidAmount, drawDate);
+                var draw = await _drawService.ExecuteDrawAsync(tontineId, winningShareId, bidAmount, drawDate, otherDeduction, otherDeductionNote);
                 TempData["Success"] = $"Đã chốt kỳ khui số {draw.SequenceNumber} thành công!";
                 return RedirectToAction("Bill", new { drawId = draw.Id });
             }

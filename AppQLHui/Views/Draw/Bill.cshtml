@@ -47,23 +47,33 @@
         </div>
 
         <!-- Financial Summary -->
-        <div class="row g-3 mb-5">
-            <div class="col-4">
-                <div class="text-center">
-                    <div class="text-secondary small fw-bold">TIỀN THĂM (B)</div>
-                    <div class="fs-5 fw-bold text-warning">@draw.BidAmount.ToString("N0") <small>đ</small></div>
+        <div class="row g-3 mb-5 py-4 bg-light rounded-4 shadow-sm">
+            <div class="col-md-3 col-6">
+                <div class="text-center px-2">
+                    <div class="text-secondary small fw-bold text-uppercase mb-1">Tổng gom</div>
+                    <div class="fs-5 fw-bold text-dark">@(draw.ActualReceived + draw.OtherDeduction + draw.OldDebtDeduction).ToString("N0") <small class="small">đ</small></div>
                 </div>
             </div>
-            <div class="col-4">
-                <div class="text-center border-start border-end">
-                    <div class="text-secondary small fw-bold">TIỀN THẢO (F)</div>
-                    <div class="fs-5 fw-bold text-danger">@draw.CollectedFee.ToString("N0") <small>đ</small></div>
+            <div class="col-md-3 col-6">
+                <div class="text-center px-2 border-start">
+                    <div class="text-secondary small fw-bold text-uppercase mb-1">Trừ nợ cũ</div>
+                    <div class="fs-5 fw-bold text-danger">@(draw.OldDebtDeduction > 0 ? "-" + draw.OldDebtDeduction.ToString("N0") : "0") <small class="small">đ</small></div>
                 </div>
             </div>
-            <div class="col-4">
-                <div class="text-center">
-                    <div class="text-secondary small fw-bold">THỰC NHẬN</div>
-                    <div class="fs-4 fw-800 text-success">@((winnerTx?.NetTotal ?? 0).ToString("N0")) <small>đ</small></div>
+            <div class="col-md-3 col-6">
+                <div class="text-center px-2 border-start">
+                    <div class="text-secondary small fw-bold text-uppercase mb-1">Trừ khác</div>
+                    <div class="fs-5 fw-bold text-danger">@(draw.OtherDeduction > 0 ? "-" + draw.OtherDeduction.ToString("N0") : "0") <small class="small">đ</small></div>
+                    @if (!string.IsNullOrEmpty(draw.OtherDeductionNote))
+                    {
+                        <div class="small text-muted italic" style="font-size: 0.75rem;">(@draw.OtherDeductionNote)</div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="text-center px-2 border-start">
+                    <div class="text-secondary small fw-bold text-uppercase mb-1">THỰC GIAO</div>
+                    <div class="fs-4 fw-800 text-success">@draw.ActualReceived.ToString("N0") <small class="small">đ</small></div>
                 </div>
             </div>
         </div>

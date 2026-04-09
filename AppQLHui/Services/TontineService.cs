@@ -25,7 +25,9 @@ namespace AppQLHui.Services
         public async Task<DrawPreviewDto> CalculateDrawPreviewAsync(
             int tontineId,
             int winningShareId,
-            decimal bidAmount)
+            decimal bidAmount,
+            decimal otherDeduction = 0,
+            string? otherDeductionNote = null)
         {
             var tontine = await _db.Tontines
                 .Include(t => t.Shares)
@@ -41,17 +43,24 @@ namespace AppQLHui.Services
 
             int nextSeq = (await _db.Draws
                 .Where(d => d.TontineId == tontineId)
-                .CountAsync()) + 1;
+                .Select(d => (int?)d.SequenceNumber)
+                .MaxAsync()) ?? 0;
+            nextSeq += 1;
 
             // Phân loại các phần trong dây (không tính phần vừa trúng khi tính tiền đóng)
-            var allShares = tontine.Shares.ToList();
+            // Strict Professional Logic: Total paying shares = TotalShares - 1 (the winner)
+            int deadCount = nextSeq - 1;
+            int livingCount = tontine.TotalShares - nextSeq; 
+
+            // Phân loại các phần trong dây để tính breakdown từng người
+            var allShares = tontine.Shares.OrderBy(s => s.Position).Take(tontine.TotalShares).ToList();
             var deadShares = allShares.Where(s => s.Status == ShareStatus.Dead).ToList();
             var livingSharesExcludingWinner = allShares
                 .Where(s => s.Status == ShareStatus.Living && s.Id != winningShareId)
                 .ToList();
 
-            decimal totalFromDead = deadShares.Count * tontine.BaseAmount;
-            decimal totalFromLiving = livingSharesExcludingWinner.Count * (tontine.BaseAmount - bidAmount);
+            decimal totalFromDead = deadCount * tontine.BaseAmount;
+            decimal totalFromLiving = livingCount * (tontine.BaseAmount - bidAmount);
             
             // Professional Logic: Fee collected based on FeeType
             // Before: only seq 1 pays. After: everyone pays.
@@ -110,6 +119,8 @@ namespace AppQLHui.Services
                 AmountReceive = kv.Value.Receive,
                 NetTotal = kv.Value.Receive - kv.Value.Pay,
                 OldDebtDeduction = kv.Key == winningShare.PlayerId ? winnerOldDebt : 0,
+                OtherDeduction = kv.Key == winningShare.PlayerId ? otherDeduction : 0,
+                OtherDeductionNote = kv.Key == winningShare.PlayerId ? otherDeductionNote : null,
                 IsWinner = kv.Key == winningShare.PlayerId
             }).OrderByDescending(x => x.IsWinner).ThenBy(x => x.PlayerName).ToList();
 
@@ -124,12 +135,14 @@ namespace AppQLHui.Services
                 WinningShareId = winningShareId,
                 WinnerPlayerId = winningShare.PlayerId,
                 WinnerPlayerName = winningShare.Player.Name,
-                CountLivingPortions = livingSharesExcludingWinner.Count,
-                CountDeadPortions = deadShares.Count,
+                CountLivingPortions = livingCount,
+                CountDeadPortions = deadCount,
                 TotalFromLiving = totalFromLiving,
                 TotalFromDead = totalFromDead,
                 TotalReceived = totalReceived,
                 OldDebtDeduction = winnerOldDebt,
+                OtherDeduction = otherDeduction,
+                OtherDeductionNote = otherDeductionNote,
                 PlayerTransactions = result
             };
         }

@@ -22,9 +22,9 @@ namespace AppQLHui.Services
         /// <summary>
         /// Chốt một kỳ khui hụi: tính toán, lưu Draw + Transactions, cập nhật trạng thái phần.
         /// </summary>
-        public async Task<Draw> ExecuteDrawAsync(int tontineId, int winningShareId, decimal bidAmount, DateTime drawDate)
+        public async Task<Draw> ExecuteDrawAsync(int tontineId, int winningShareId, decimal bidAmount, DateTime drawDate, decimal otherDeduction = 0, string? otherDeductionNote = null)
         {
-            var preview = await _tontineService.CalculateDrawPreviewAsync(tontineId, winningShareId, bidAmount);
+            var preview = await _tontineService.CalculateDrawPreviewAsync(tontineId, winningShareId, bidAmount, otherDeduction, otherDeductionNote);
 
             var tontine = await _db.Tontines
                 .Include(t => t.Shares)
@@ -41,7 +41,11 @@ namespace AppQLHui.Services
                 BidAmount = bidAmount,
                 CollectedFee = preview.CommissionFee,
                 OldDebtDeduction = preview.OldDebtDeduction,
-                ActualReceived = preview.FinalReceived
+                OtherDeduction = otherDeduction,
+                OtherDeductionNote = otherDeductionNote,
+                ActualReceived = preview.FinalReceived,
+                CountLivingShares = preview.CountLivingPortions,
+                CountDeadShares = preview.CountDeadPortions
             };
             _db.Draws.Add(draw);
             await _db.SaveChangesAsync(); // lấy draw.Id
@@ -117,6 +121,13 @@ namespace AppQLHui.Services
 
             if (positionPlayerMap.Count != tontine.TotalShares)
                 throw new InvalidOperationException($"Số lượng phần hụi ({positionPlayerMap.Count}) phải đúng bằng tổng số phần ({tontine.TotalShares}).");
+
+            // Xóa phần hụi cũ nếu đã có (để tránh trùng lặp khi Setup lại)
+            var existingShares = await _db.TontineShares.Where(s => s.TontineId == tontineId).ToListAsync();
+            if (existingShares.Any())
+            {
+                _db.TontineShares.RemoveRange(existingShares);
+            }
 
             foreach (var kvp in positionPlayerMap)
             {

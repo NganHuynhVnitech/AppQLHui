@@ -77,5 +77,38 @@ namespace AppQLHui.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> QuickCreate(string name, string phone)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                    return Json(new { success = false, message = "Vui lòng nhập tên hụi viên." });
+
+                var player = new Player
+                {
+                    Name = name.Trim(),
+                    Phone = phone?.Trim() ?? "",
+                    CreatedAt = DateTime.Now,
+                    OwnerId = _db.CurrentUserId ?? 0
+                };
+
+                _db.Players.Add(player);
+                await _db.SaveChangesAsync();
+
+                return Json(new { 
+                    success = true, 
+                    id = player.Id, 
+                    name = player.Name, 
+                    phone = player.Phone,
+                    avatarInit = player.Name.Substring(0, 1).ToUpper()
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 }

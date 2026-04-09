@@ -76,7 +76,13 @@
                                     {
                                         <button type="button" class="btn btn-outline-primary btn-sm rounded-3 px-3 me-1" 
                                                 data-bs-toggle="modal" data-bs-target="#editUserModal" 
-                                                data-id="@user.Id" data-fullname="@user.FullName" data-role="@user.Role">
+                                                data-id="@user.Id" 
+                                                data-fullname="@user.FullName" 
+                                                data-role="@user.Role"
+                                                data-phone="@user.Phone"
+                                                data-bankname="@user.BankName"
+                                                data-bankaccountnumber="@user.BankAccountNumber"
+                                                data-bankaccountname="@user.BankAccountName">
                                             <i class="bi bi-pencil-square"></i> Sửa
                                         </button>
 
@@ -136,6 +142,24 @@
                         <input type="password" name="password" class="form-control rounded-4 px-3" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Số điện thoại</label>
+                        <input type="text" name="phone" class="form-control rounded-4 px-3" placeholder="036..." maxlength="30">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Tên ngân hàng</label>
+                            <input type="text" name="bankName" class="form-control rounded-4 px-3" placeholder="MB Bank...">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Số tài khoản</label>
+                            <input type="text" name="bankAccountNumber" class="form-control rounded-4 px-3" placeholder="2424...">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên chủ tài khoản</label>
+                        <input type="text" name="bankAccountName" class="form-control rounded-4 px-3" placeholder="HUYNH XUAN...">
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Vai trò</label>
                         <select name="role" class="form-select rounded-4 px-3">
                             <option value="Owner">Chủ hụi (Owner)</option>
@@ -169,6 +193,24 @@
                         <input type="text" name="fullName" id="edit-fullname" class="form-control rounded-4 px-3" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Số điện thoại</label>
+                        <input type="text" name="phone" id="edit-phone" class="form-control rounded-4 px-3" maxlength="30">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Tên ngân hàng</label>
+                            <input type="text" name="bankName" id="edit-bankname" class="form-control rounded-4 px-3">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Số tài khoản</label>
+                            <input type="text" name="bankAccountNumber" id="edit-bankaccountnumber" class="form-control rounded-4 px-3">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên chủ tài khoản</label>
+                        <input type="text" name="bankAccountName" id="edit-bankaccountname" class="form-control rounded-4 px-3">
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Vai trò</label>
                         <select name="role" id="edit-role" class="form-select rounded-4 px-3">
                             <option value="Owner">Chủ hụi (Owner)</option>
@@ -192,10 +234,18 @@
             var id = button.getAttribute('data-id');
             var fullname = button.getAttribute('data-fullname');
             var role = button.getAttribute('data-role');
-
+            var phone = button.getAttribute('data-phone');
+            var bankname = button.getAttribute('data-bankname');
+            var bankaccountnumber = button.getAttribute('data-bankaccountnumber');
+            var bankaccountname = button.getAttribute('data-bankaccountname');
+ 
             document.getElementById('edit-id').value = id;
             document.getElementById('edit-fullname').value = fullname;
             document.getElementById('edit-role').value = role;
+            document.getElementById('edit-phone').value = phone || '';
+            document.getElementById('edit-bankname').value = bankname || '';
+            document.getElementById('edit-bankaccountnumber').value = bankaccountnumber || '';
+            document.getElementById('edit-bankaccountname').value = bankaccountname || '';
         });
     </script>
 }

@@ -38,8 +38,21 @@ namespace AppQLHui.Models
         public decimal OldDebtDeduction { get; set; }
 
         [Column(TypeName = "decimal(18,0)")]
+        [Display(Name = "Trừ khác")]
+        public decimal OtherDeduction { get; set; }
+
+        [Display(Name = "Ghi chú trừ khác")]
+        public string? OtherDeductionNote { get; set; }
+
+        [Column(TypeName = "decimal(18,0)")]
         [Display(Name = "Thực giao")]
         public decimal ActualReceived { get; set; }
+
+        [Display(Name = "Số phần sống")]
+        public int CountLivingShares { get; set; }
+
+        [Display(Name = "Số phần chết")]
+        public int CountDeadShares { get; set; }
 
         // Navigation
         [ValidateNever]
